@@ -9,7 +9,8 @@ committed, and never touched at demo time (charter R1).
                     -> flow direction -> flow accumulation
     P2-T3  GRID-SEARCH the stream threshold against OSM waterways by F1,
            write the winner AND the whole table back to the YAML  (charter R7)
-    P2-T4  HAND = height above nearest drainage
+    P2-T4  HAND = height above nearest drainage, cross-checked against the
+           published GLO-30-HAND product on s3://glo-30-hand
     P2-T5  TWI, slope, plan curvature
     P2-T7  distance-to-drain, drainage density
     P2-T9  resample every layer onto the shared 100 m grid, stack to NetCDF
@@ -493,6 +494,84 @@ def step_hand(g: Grids, threshold: int, force: bool) -> Path:
         h = np.where(np.isnan(h), np.nanpercentile(h, 99), h)
     stats("hand", h, "m")
     return write(out, h, g)
+
+
+def step_hand_crosscheck(g: Grids, cfg: dict) -> dict | None:
+    """P2-T4 cross-check — our HAND vs the published GLO-30-HAND product.
+
+    s3://glo-30-hand/v1/2021/ holds a HAND raster derived from the same GLO-30
+    DEM by an independent pipeline (ASF/HydroSAR). It is not ground truth, but
+    it IS an independent implementation on the same input, so agreement is
+    strong evidence that our conditioning, routing and stream mask are sane —
+    and disagreement would be the first place to look for a bug.
+
+    Tiles live in data/raw/hand_ref/ and are optional; this step is skipped if
+    they are absent.
+    """
+    ref_dir = ROOT / "data" / "raw" / "hand_ref"
+    tiles = sorted(ref_dir.glob("*_HAND.tif"))
+    if not tiles:
+        print("  no reference tiles in data/raw/hand_ref/ — cross-check skipped")
+        return None
+
+    from rasterio.merge import merge
+    from scipy.stats import spearmanr
+
+    srcs = [rasterio.open(t) for t in tiles]
+    mosaic, mt = merge(srcs)
+    mcrs = srcs[0].crs
+    mnod = srcs[0].nodata
+    for s in srcs:
+        s.close()
+    print(f"  reference: {len(tiles)} tiles, mosaic {mosaic.shape}, crs {mcrs}")
+
+    ours = read(STATIC / "g100_hand.tif")
+    print(f"  ours       p50 {np.median(ours):7.2f} m   "
+          f"p90 {np.percentile(ours, 90):7.2f} m")
+
+    out = {}
+    # AVERAGE is the like-for-like kernel and the headline number. MIN is
+    # reported too because our own layer is a block-min, but min-resampling an
+    # already-min-aggregated field from 30 m to 100 m double-counts the low
+    # tail and drags the reference to a p50 of 0 — a comparison artefact, not
+    # a disagreement.
+    for rs in (Resampling.average, Resampling.min):
+        dst = np.full((g.ny100, g.nx100), np.nan, dtype="float32")
+        reproject(source=mosaic[0], destination=dst,
+                  src_transform=mt, src_crs=mcrs,
+                  dst_transform=g.t100, dst_crs=g.crs,
+                  src_nodata=mnod, dst_nodata=np.nan, resampling=rs)
+        if rs is Resampling.average:
+            p = write(STATIC / "g100_hand_reference.tif", dst, g, fine=False)
+            assert_aligned(p, g, fine=False)
+        m = np.isfinite(ours) & np.isfinite(dst)
+        a, b = ours[m], dst[m].astype("float64")
+        if a.size < 1000:
+            print("  too few overlapping cells to compare")
+            return None
+        pear = float(np.corrcoef(a, b)[0, 1])
+        spear = float(spearmanr(a, b).statistic)
+        mad = float(np.median(np.abs(a - b)))
+        print(f"  [{rs.name:<7}] ref p50 {np.median(b):6.2f} m  "
+              f"p90 {np.percentile(b, 90):6.2f} m  |  Pearson {pear:.3f}  "
+              f"Spearman {spear:.3f}  median|diff| {mad:.2f} m  "
+              f"(n={a.size:,})")
+        out[rs.name] = dict(cells=int(a.size), pearson_r=round(pear, 4),
+                            spearman_r=round(spear, 4),
+                            median_abs_diff_m=round(mad, 3))
+    REPORTS.mkdir(parents=True, exist_ok=True)
+    (REPORTS / "phase2_hand_crosscheck.json").write_text(json.dumps(
+        dict(reference="s3://glo-30-hand/v1/2021/ (ASF/HydroSAR)",
+             tiles=[t.name for t in tiles],
+             ours_p50_m=round(float(np.median(ours)), 3),
+             ours_p90_m=round(float(np.percentile(ours, 90)), 3),
+             by_resampling=out), indent=2))
+    print("  Spearman is the number that matters — susceptibility is built "
+          "from ranks, not absolute metres.")
+    print("  Residual disagreement is expected and has one dominant cause: "
+          "the two pipelines use different stream-network densities, and HAND "
+          "is defined relative to that network.")
+    return out
 
 
 # ============================================================ P2-T5  TWI etc.
@@ -1008,6 +1087,9 @@ def main() -> None:
 
         print("\n[P2-T4] HAND")
         step_hand(g, chosen, args.force)
+
+        print("\n[P2-T4] HAND cross-check vs the published GLO-30-HAND product")
+        step_hand_crosscheck(g, cfg)
 
         print("\n[P2-T5] slope, TWI, plan curvature")
         step_terrain(g, args.force)

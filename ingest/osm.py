@@ -39,6 +39,7 @@ import warnings
 from pathlib import Path
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import yaml
 
@@ -89,13 +90,29 @@ def load_cfg() -> dict:
 
 
 def setup_osmnx():
+    import socket
+
     import osmnx as ox
+
+    # A hard socket-level deadline. ox.settings.requests_timeout is the
+    # Overpass *server-side* [timeout:] directive, not an HTTP socket timeout,
+    # so a connection the server accepts and then abandons blocks the client
+    # forever (observed twice: 35 min with zero server-side activity). This
+    # turns that hang into an ordinary exception the retry loop can act on.
+    socket.setdefaulttimeout(SOCKET_TIMEOUT_S)
+
     CACHE.mkdir(parents=True, exist_ok=True)
     ox.settings.use_cache = True
     ox.settings.cache_folder = str(CACHE)
     ox.settings.requests_timeout = 300
     ox.settings.log_console = False
-    ox.settings.overpass_rate_limit = True
+    # osmnx's built-in rate limiter polls /api/status and SLEEPS until it
+    # believes a slot is free. Observed 31 Aug 2026: it parked indefinitely
+    # while /api/status reported "2 slots available now" and a hand-rolled
+    # curl query to the same endpoint returned in 1.1 s. We make a handful of
+    # requests, tiled and backed off by this module already, so its own
+    # retry/backoff is the one to trust.
+    ox.settings.overpass_rate_limit = False
     return ox
 
 
@@ -113,46 +130,85 @@ def _sanitize(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     return gpd.GeoDataFrame(out, geometry="geometry", crs=gdf.crs)
 
 
+def _tiles(bbox: dict, n: int = 2) -> list[tuple[float, float, float, float]]:
+    """Split the AOI into an n x n lattice of sub-bboxes."""
+    xs = np.linspace(bbox["west"], bbox["east"], n + 1)
+    ys = np.linspace(bbox["south"], bbox["north"], n + 1)
+    return [(xs[i], ys[j], xs[i + 1], ys[j + 1])
+            for j in range(n) for i in range(n)]
+
+
 def _quadrants(bbox: dict) -> list[tuple[float, float, float, float]]:
-    """Split the AOI into 4 for Overpass queries that time out whole."""
-    w, e = bbox["west"], bbox["east"]
-    s, n = bbox["south"], bbox["north"]
-    mx, my = (w + e) / 2, (s + n) / 2
-    return [(w, s, mx, my), (mx, s, e, my), (w, my, mx, n), (mx, my, e, n)]
+    return _tiles(bbox, 2)
+
+
+# Layers too heavy for one whole-AOI Overpass call. Probed 31 Aug 2026: the
+# whole-AOI `highway` query hangs indefinitely — the client blocks while
+# overpass-api.de's own /api/status reports NO query running for us, so it
+# never raises and never trips a retry. Tiling turns one request the server
+# silently drops into N it actually answers. Values are the lattice size n
+# (n x n tiles).
+TILE_FIRST = {"roads": 4}
+
+# Hard wall-clock ceiling on any single socket operation. See setup_osmnx().
+SOCKET_TIMEOUT_S = 180.0
+
+
+def _tiled_fetch(ox, name: str, tags: dict, bbox: dict, n: int,
+                 retries: int = 3) -> list:
+    parts = []
+    tiles = _tiles(bbox, n)
+    for i, q in enumerate(tiles, 1):
+        for attempt in range(retries):
+            try:
+                g = ox.features_from_bbox(q, tags)
+                print(f"      tile {i}/{len(tiles)}: {len(g)} features",
+                      flush=True)
+                parts.append(g)
+                break
+            except Exception as exc:  # noqa: BLE001
+                # An EmptyOverpassResponse for an empty rural tile is normal.
+                if "empty" in str(exc).lower() or \
+                        "no matching features" in str(exc).lower():
+                    print(f"      tile {i}/{len(tiles)}: empty")
+                    break
+                print(f"      tile {i}/{len(tiles)} attempt {attempt+1}: "
+                      f"{type(exc).__name__}: {str(exc)[:110]}", flush=True)
+                if attempt < retries - 1:
+                    time.sleep(5 * (2 ** attempt))
+    return parts
 
 
 def fetch_features(ox, name: str, tags: dict, bbox: dict,
                    retries: int = 3) -> gpd.GeoDataFrame:
-    """Whole-bbox first; backoff retries; quadrant split as last resort."""
+    """Whole-bbox first; backoff retries; tile split as fallback.
+
+    Layers listed in TILE_FIRST skip the whole-bbox attempt entirely — for
+    those it does not fail, it hangs, and a hang is not retryable."""
     # osmnx >= 2.0 takes bbox as (left, bottom, right, top) = (W, S, E, N).
     box = (bbox["west"], bbox["south"], bbox["east"], bbox["north"])
 
-    for attempt in range(retries):
-        try:
-            gdf = ox.features_from_bbox(box, tags)
-            print(f"    whole-bbox query ok ({len(gdf)} raw features)")
-            return gdf
-        except Exception as exc:  # noqa: BLE001 - Overpass throws many types
-            wait = 5 * (2 ** attempt)
-            print(f"    attempt {attempt+1}/{retries} failed: "
-                  f"{type(exc).__name__}: {str(exc)[:160]}")
-            if attempt < retries - 1:
-                print(f"    backing off {wait}s ...", flush=True)
-                time.sleep(wait)
-
-    print("    falling back to quadrant split")
-    parts = []
-    for i, q in enumerate(_quadrants(bbox), 1):
+    if name not in TILE_FIRST:
         for attempt in range(retries):
             try:
-                g = ox.features_from_bbox(q, tags)
-                print(f"      quadrant {i}: {len(g)} features")
-                parts.append(g)
-                break
-            except Exception as exc:  # noqa: BLE001
-                print(f"      quadrant {i} attempt {attempt+1}: "
-                      f"{type(exc).__name__}: {str(exc)[:120]}")
-                time.sleep(5 * (2 ** attempt))
+                gdf = ox.features_from_bbox(box, tags)
+                print(f"    whole-bbox query ok ({len(gdf)} raw features)")
+                return gdf
+            except Exception as exc:  # noqa: BLE001 - Overpass throws many types
+                wait = 5 * (2 ** attempt)
+                print(f"    attempt {attempt+1}/{retries} failed: "
+                      f"{type(exc).__name__}: {str(exc)[:160]}")
+                if attempt < retries - 1:
+                    print(f"    backing off {wait}s ...", flush=True)
+                    time.sleep(wait)
+        print("    falling back to a 2x2 tile split")
+        n = 2
+    else:
+        n = TILE_FIRST[name]
+        print(f"    heavy layer — going straight to a {n}x{n} tile split "
+              f"({n*n} queries)", flush=True)
+
+    parts = _tiled_fetch(ox, name, tags, bbox, n, retries)
     if not parts:
         raise RuntimeError(f"Overpass failed for layer '{name}' on every path")
     return pd.concat(parts)
@@ -169,6 +225,12 @@ def pull_layer(ox, name: str, tags: dict, bbox: dict, force: bool) -> Path:
     print(f"  querying {name:<11} tags={tags}", flush=True)
     gdf = fetch_features(ox, name, tags, bbox)
     gdf = _sanitize(gdf)
+    if "osmid" in gdf.columns:
+        before = len(gdf)
+        gdf = gdf.drop_duplicates(subset=["osmid"])
+        if before != len(gdf):
+            print(f"  deduped {before-len(gdf)} features repeated across "
+                  f"tile seams")
     RAW.mkdir(parents=True, exist_ok=True)
     gdf.to_parquet(out)
     counts = gdf.geom_type.value_counts().to_dict()
