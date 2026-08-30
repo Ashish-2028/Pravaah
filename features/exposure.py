@@ -127,6 +127,24 @@ def road_km(wards: gpd.GeoDataFrame, crs: str) -> pd.Series:
         print("  roads       MISSING (roads.parquet) -> column will be "
               "NULL, not zero")
         return out
+    # Completeness gate. ingest/osm.py fetches the road layer as tiles and
+    # records any it could not get. A layer with a hole in central Delhi
+    # produces plausible-looking road_km for every ward and warns nobody, so
+    # an incomplete layer is treated as NO layer.
+    meta = OSM.parent / "roads.meta.json"
+    if meta.exists():
+        import json
+        m = json.loads(meta.read_text())
+        if not m.get("complete", False):
+            print(f"  roads       INCOMPLETE — {len(m.get('tiles_missing', []))}"
+                  f" of {m.get('tiles_total')} tiles missing "
+                  f"{m.get('tiles_missing')}. Refusing to compute road_km "
+                  f"from a holed layer; column stays NULL. Re-run "
+                  f"`python ingest/osm.py` to fill the gaps.")
+            return out
+        print(f"  roads       layer complete ({m['tiles_total']}/"
+              f"{m['tiles_total']} tiles)")
+
     e = gpd.read_parquet(p).to_crs(crs)
     e = e[e.geometry.notna() & ~e.geometry.is_empty]
     e = e[e.geom_type.isin(["LineString", "MultiLineString"])]

@@ -13,6 +13,8 @@ committed, and never touched at demo time (charter R1).
            published GLO-30-HAND product on s3://glo-30-hand
     P2-T5  TWI, slope, plan curvature
     P2-T7  distance-to-drain, drainage density
+    P2-T8  impervious fraction (ESA WorldCover 10 m, class 50) and built-up
+           surface fraction (GHSL GHS-BUILT-S 100 m) onto the hydro grid
     P2-T9  resample every layer onto the shared 100 m grid, stack to NetCDF
     P2-T10 deterministic weighted susceptibility map + reports/susceptibility.png
     GATE   sample the map at known waterlogging blackspots and report percentiles
@@ -662,6 +664,114 @@ def step_drain_metrics(g: Grids, cfg: dict, force: bool) -> dict[str, Path]:
     return outs
 
 
+# ============================================================ P2-T8  impervious
+
+def step_impervious(g: Grids, cfg: dict, force: bool) -> dict[str, Path]:
+    """P2-T8 — sealed-surface fraction onto the 25 m hydro grid.
+
+    WHY THIS LAYER IS NOT OPTIONAL
+    ------------------------------
+    Everything above this point is DEM hydrology, and DEM hydrology finds
+    NATURAL flood terrain: floodplain, valley bottom, backswamp. Delhi's
+    famous blackspots are not that. They are URBAN PLUVIAL waterlogging —
+    a 60 mm hour landing on ground that is 90 % sealed, generating four to
+    eight times the runoff volume that the same rain would generate on the
+    cropland two kilometres away, and arriving at a low point in minutes
+    rather than hours. Imperviousness is the term that separates "this
+    hollow is low" from "this hollow is low AND everything upstream of it
+    sheds instead of soaking".
+
+    TWO SOURCES, DELIBERATELY
+    -------------------------
+    impervious  ESA WorldCover 10 m class 50. A CLASSIFICATION, so a 100 m
+                cell's value is a countable fraction of 100 sealed/not-sealed
+                10 m pixels. This is the primary layer.
+    built_up    GHSL GHS-BUILT-S R2023A, m^2 of built-up surface per 100 m
+                cell / 10000. A REGRESSION from different sensors, a
+                different method and a different epoch (2020 vs 2021).
+                Carried as an independent check, not as a duplicate: where
+                the two disagree strongly, neither should be trusted alone,
+                and InundaNet gets to learn which one it believes.
+
+    RESAMPLING
+    ----------
+    Both are warped with Resampling.average, which is an area-weighted mean
+    over the source pixels a target cell covers — for a 0/1 mask that IS the
+    fraction, and it invents no values. The 25 m result then goes to 100 m
+    through the same exact 4x4 block mean as every other layer, so the
+    alignment guarantee at the top of this file still holds end to end."""
+    outs = {"impervious": STATIC / "impervious.tif",
+            "built_up": STATIC / "built_up.tif"}
+    lc = ROOT / "data" / "raw" / "landcover"
+    wc_src = lc / "worldcover_aoi.tif"
+    gh_src = lc / "ghsl_built_s_aoi.tif"
+
+    if outs["impervious"].exists() and not force:
+        assert_aligned(outs["impervious"], g, fine=True)
+        print("  cached  impervious.tif")
+    else:
+        if not wc_src.exists():
+            sys.exit(f"{wc_src} missing — run ingest/landcover.py first")
+        built_class = int(cfg["static_hydro"]["worldcover_built_up_class"])
+        with rasterio.open(wc_src) as src:
+            legend = src.tags().get("legend", "")
+            line = [ln for ln in legend.splitlines()
+                    if ln.strip().startswith(str(built_class))]
+            assert line and "Built-up" in line[0], (
+                f"class {built_class} is not Built-up in the cached tile's "
+                f"legend — refuse to guess:\n{legend}")
+            cls = src.read(1)
+            nod_frac = float((cls == 0).mean())
+            mask = (cls == built_class).astype("float32")
+            print(f"  WorldCover {cls.shape} class {built_class} = Built-up, "
+                  f"{100*mask.mean():.2f} % of source pixels, "
+                  f"{100*nod_frac:.4f} % nodata")
+            dst = np.full((g.ny, g.nx), np.nan, dtype="float32")
+            reproject(source=mask, destination=dst,
+                      src_transform=src.transform, src_crs=src.crs,
+                      dst_transform=g.t, dst_crs=g.crs,
+                      src_nodata=None, dst_nodata=np.nan,
+                      resampling=Resampling.average)
+        bad = float(np.isnan(dst).mean())
+        assert bad < 0.001, (
+            f"{100*bad:.3f} % of the hydro grid has no WorldCover cover — "
+            f"increase PAD_DEG in ingest/landcover.py")
+        dst = np.clip(np.nan_to_num(dst, nan=0.0), 0.0, 1.0)
+        stats("impervious", dst.astype("float64"), "[0,1]")
+        write(outs["impervious"], dst, g)
+
+    if outs["built_up"].exists() and not force:
+        assert_aligned(outs["built_up"], g, fine=True)
+        print("  cached  built_up.tif")
+    elif gh_src.exists():
+        with rasterio.open(gh_src) as src:
+            arr = src.read(1).astype("float32")
+            arr = np.clip(arr / 10000.0, 0.0, 1.0)   # m^2 per 100x100 m cell
+            dst = np.full((g.ny, g.nx), np.nan, dtype="float32")
+            reproject(source=arr, destination=dst,
+                      src_transform=src.transform, src_crs=src.crs,
+                      dst_transform=g.t, dst_crs=g.crs,
+                      src_nodata=np.nan, dst_nodata=np.nan,
+                      resampling=Resampling.average)
+        print(f"  GHSL {arr.shape} {src.crs} -> {g.crs}/{g.res_fine:.0f} m")
+        dst = np.clip(np.nan_to_num(dst, nan=0.0), 0.0, 1.0)
+        stats("built_up", dst.astype("float64"), "[0,1]")
+        write(outs["built_up"], dst, g)
+    else:
+        print(f"  !! {gh_src} missing — GHSL layer skipped (optional)")
+        outs.pop("built_up")
+
+    # Agreement between two independent measurements of the same physical
+    # quantity. If this correlation were low, one of them would be wrong.
+    if outs.get("built_up") and outs["impervious"].exists():
+        a, b = read(outs["impervious"]).ravel(), read(outs["built_up"]).ravel()
+        ok = np.isfinite(a) & np.isfinite(b)
+        r = float(np.corrcoef(a[ok], b[ok])[0, 1])
+        print(f"  WorldCover-impervious vs GHSL-built_up  Pearson r = {r:.3f} "
+              f"(mean {a[ok].mean():.3f} vs {b[ok].mean():.3f})")
+    return outs
+
+
 # ============================================================ P2-T9  100 m stack
 
 # name -> how a 4x4 block of 25 m cells becomes one 100 m cell.
@@ -676,7 +786,16 @@ AGG = {
     "sink_depth":    ("sink_depth.tif",   "max"),
     "dist_drain":    ("dist_drain.tif",   "min"),
     "drain_density": ("drain_density.tif", "mean"),
+    # P2-T8. mean, because a FRACTION aggregates by area: the mean of 16
+    # 25 m sealed-fractions IS the 100 m sealed-fraction. min/max would be
+    # a category error here.
+    "impervious":    ("impervious.tif",   "mean"),
+    "built_up":      ("built_up.tif",     "mean"),
 }
+
+# Layers the stack tolerates being absent. GHSL is a second opinion, not a
+# dependency — a JRC outage must not be able to break Phase 2.
+OPTIONAL = {"built_up"}
 
 
 def block_reduce(a: np.ndarray, f: int, how: str) -> np.ndarray:
@@ -701,6 +820,9 @@ def step_stack(g: Grids, cfg: dict, force: bool) -> Path:
           f"by exact {g.factor}x{g.factor} blocks (no interpolation)")
     for name, (fname, how) in AGG.items():
         src = STATIC / fname
+        if name in OPTIONAL and not src.exists():
+            print(f"    {name:<14} SKIPPED — {fname} not present (optional)")
+            continue
         assert_aligned(src, g, fine=True)          # tripwire on the INPUT too
         coarse = block_reduce(read(src), g.factor, how)
         p = write(STATIC / f"g100_{name}.tif", coarse, g, fine=False)
@@ -721,7 +843,8 @@ def step_stack(g: Grids, cfg: dict, force: bool) -> Path:
             resolution_m=g.res100,
             hydro_resolution_m=g.res_fine,
             stream_threshold_cells=cfg["fitted"]["stream_threshold_chosen"],
-            source="Copernicus GLO-30 DSM + OpenStreetMap (Overpass)",
+            source=("Copernicus GLO-30 DSM + OpenStreetMap (Overpass) + "
+                    "ESA WorldCover 10 m v200 2021 + GHSL GHS-BUILT-S R2023A"),
             created=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         ))
     # CF-style grid mapping so anything that reads this NetCDF (rioxarray, QGIS,
@@ -763,20 +886,24 @@ def step_susceptibility(g: Grids, cfg: dict) -> Path:
     This is not a model. It is arithmetic on terrain, and we say so.
 
     KNOWN AND MEASURED LIMITATION — read this before using the layer.
-    Every one of the four terms declines monotonically with built-up density
-    (see the built-up profile printed by the exit gate). Delhi's built-up core
-    sits on relatively higher, steeper, better-drained ground than the farmland
-    and floodplain around it, so a TERRAIN-ONLY index ranks the farmland above
-    the city. That is what the terrain says, and it is not wrong — it is
-    incomplete. Delhi's actual waterlogging blackspots are engineering
-    failures (underpasses below the storm-sewer grade line, silted trunk
-    drains, pump outages) sitting on ground terrain calls safe.
+    Every one of the four TERRAIN terms declines monotonically with built-up
+    density (see the built-up profile printed by the exit gate). Delhi's
+    built-up core sits on relatively higher, steeper, better-drained ground
+    than the farmland and floodplain around it, so a TERRAIN-ONLY index ranks
+    the farmland above the city. That is what the terrain says, and it is not
+    wrong — it is incomplete. Delhi's actual waterlogging blackspots are
+    engineering failures (underpasses below the storm-sewer grade line, silted
+    trunk drains, pump outages) sitting on ground terrain calls safe.
 
-    The consequence for InundaNet (PRAVAAH.md 7.3) is concrete: the impervious
-    / built-up layer is NOT an optional extra feature, it is load-bearing, and
-    it must be free to carry a positive coefficient against these terms.
-    data/static/g100_surface_height.tif (DSM minus bare earth) is in the stack
-    as a first built-up proxy for exactly that purpose."""
+    P2-T8 adds the fifth term, `impervious`, for exactly that reason. It is
+    the only term in this index that is not derived from the DEM, and it is
+    the only one that rises with urbanisation. It does NOT model drainage
+    capacity — nothing free and global does — so the limitation above is
+    reduced, not removed. Read the exit gate before believing this map.
+
+    WEIGHTS ARE CHOSEN ON PHYSICS, THEN THE GATE IS RUN ONCE.
+    They were not tuned against the checkpoint scores, and must not be. See
+    the justification in configs/aoi_delhi_ncr.yaml next to the numbers."""
     w = cfg["static_hydro"]["susceptibility_weights"]
     tot = sum(w.values())
     assert abs(tot - 1.0) < 1e-9, f"susceptibility weights sum to {tot}, not 1"
@@ -785,13 +912,23 @@ def step_susceptibility(g: Grids, cfg: dict) -> Path:
     twi = read(STATIC / "g100_twi.tif")
     slope = read(STATIC / "g100_slope.tif")
     dist = read(STATIC / "g100_dist_drain.tif")
+    imp = read(STATIC / "g100_impervious.tif")
 
+    # Every term is percentile-rank normalised, including impervious. The
+    # impervious fraction is already in [0,1] and could have been used raw,
+    # but then the stated weights would be lying: a term with mean 0.23 and a
+    # term with mean 0.50 do not contribute equally at equal weight. Ranking
+    # all five puts them on one scale so the weights mean what they say.
     terms = {
         "hand":       1.0 - pct_norm(hand),
         "twi":        pct_norm(twi),
         "slope":      1.0 - pct_norm(slope),
         "dist_drain": pct_norm(dist),
+        "impervious": pct_norm(imp),
     }
+    assert set(terms) == set(w), (
+        f"YAML weights {sorted(w)} do not match the implemented terms "
+        f"{sorted(terms)}")
     s = sum(w[k] * terms[k] for k in terms)
     s = pct_norm(s)          # final map is itself a percentile field in [0,1]
 
@@ -867,12 +1004,15 @@ def render(s: np.ndarray, g: Grids, cfg: dict) -> None:
     axes[0].set_ylabel("UTM 43N northing (m)")
 
     fig.suptitle(
-        "PRAVAAH — static inundation susceptibility, TERRAIN ONLY (no ML)\n"
-        f"{cfg['name']} | 100 m | EPSG:32643 | deterministic weighted index: "
-        + " + ".join(f"{v:.2f}·{k}"
-                     for k, v in cfg["static_hydro"]
-                     ["susceptibility_weights"].items()),
-        fontsize=11)
+        "PRAVAAH — static inundation susceptibility: TERRAIN + IMPERVIOUS, "
+        "no ML\n"
+        f"{cfg['name']} | 100 m | EPSG:32643 | deterministic weighted index of "
+        "percentile-normalised terms\n"
+        + "  ".join(f"{v:.2f}·{k}"
+                    for k, v in cfg["static_hydro"]
+                    ["susceptibility_weights"].items())
+        + "   (Copernicus GLO-30 · OSM · ESA WorldCover 10 m)",
+        fontsize=10.5)
     cb = fig.colorbar(im, ax=axes, shrink=0.85, pad=0.02)
     cb.set_label("susceptibility percentile (1 = most flood-prone)")
     fig.savefig(REPORTS / "susceptibility.png", bbox_inches="tight")
@@ -937,13 +1077,19 @@ def exit_gate(g: Grids, cfg: dict) -> bool:
           f"within {rad_cells*100} m")
 
     diag = gate_diagnostics(g, cfg)
+    print("\n" + "=" * 72)
+    print("WARD-LEVEL GATE — the scale the product actually delivers")
+    print("=" * 72)
+    wards = ward_percentiles(g, cfg)
 
     (REPORTS / "phase2_gate.json").write_text(json.dumps(
         dict(pass_percentile=need,
              sample_radius_m=rad_cells * g.res100,
+             weights=cfg["static_hydro"]["susceptibility_weights"],
              hotspots=[dict(name=n, percentile_cell=round(a, 2),
                             percentile_neighbourhood=round(b, 2), result=f)
                        for n, a, b, f in rows],
+             ward_level=wards,
              layer_percentiles=diag,
              passed=ok), indent=2))
     return ok
@@ -956,8 +1102,10 @@ def gate_diagnostics(g: Grids, cfg: dict) -> dict:
     term is responsible, which is what turns a failure into a finding."""
     from pyproj import Transformer
 
-    names = ["hand", "twi", "slope", "dist_drain",
+    names = ["hand", "twi", "slope", "dist_drain", "impervious",
              "sink_depth", "flow_acc", "surface_height", "dem"]
+    if (STATIC / "g100_built_up.tif").exists():
+        names.append("built_up")
     lay = {n: read(STATIC / f"g100_{n}.tif") for n in names}
     pn = {n: pct_norm(v) for n, v in lay.items()}
     tf = Transformer.from_crs(g.crs_geo, g.crs, always_xy=True)
@@ -1015,34 +1163,227 @@ def built_up_profile(g: Grids) -> dict:
     """Mean susceptibility, and each term, by built-up quintile.
 
     The single most important number to hand to the InundaNet phase: it says
-    whether a terrain-only index is biased with respect to urbanisation, and
-    in which direction."""
+    whether the index is biased with respect to urbanisation, and in which
+    direction.
+
+    The binning variable is now the MEASURED impervious fraction (P2-T8,
+    ESA WorldCover class 50), not the DSM-minus-bare-earth proxy that stood
+    in for it before. Quintiles are of the impervious percentile field, so
+    q1 = the least sealed fifth of the AOI, q5 = the most sealed fifth."""
     s = read(STATIC / "susceptibility.tif")
-    lay = {n: read(STATIC / f"g100_{n}.tif")
-           for n in ("hand", "twi", "slope", "dist_drain", "surface_height")}
-    bu = pct_norm(lay["surface_height"])
-    bins = [(0, .2), (.2, .4), (.4, .6), (.6, .8), (.8, 1.01)]
+    keys = ["hand", "twi", "slope", "dist_drain", "impervious",
+            "surface_height"]
+    lay = {n: read(STATIC / f"g100_{n}.tif") for n in keys}
+    # Bins are on the RAW sealed fraction, not on its percentile rank. Half
+    # the AOI is exactly 0 % sealed, so a tie-aware percentile puts that
+    # entire mass at ~0.27 and the bottom rank-quintile comes out EMPTY.
+    # Value bands say something a reader can check against the ground.
+    bu = lay["impervious"]
+    bins = [(0.0, 0.01), (0.01, 0.25), (0.25, 0.50), (0.50, 0.75),
+            (0.75, 1.01)]
     masks = [(bu >= lo) & (bu < hi) for lo, hi in bins]
 
-    print("\n  built-up profile — mean value by built-up quintile "
-          "(q1 = least built, q5 = most).")
+    print("\n  built-up profile — mean value by SEALED-FRACTION band "
+          "(q1 = 0 %, q5 = 75-100 % sealed).")
+    print("  cells per band: " + "  ".join(
+        f"q{i+1} {int(m.sum()):,}" for i, m in enumerate(masks)))
     print("  A flood-susceptibility term should NOT fall as a city gets denser.")
     print(f"  {'':<26}" + "".join(f"{f'q{i+1}':>9}" for i in range(5)))
     rows = {"susceptibility": s,
             "term 1-norm(hand)": -lay["hand"],
             "term norm(twi)": lay["twi"],
             "term 1-norm(slope)": -lay["slope"],
-            "term norm(dist_drain)": lay["dist_drain"]}
+            "term norm(dist_drain)": lay["dist_drain"],
+            "term norm(impervious)": lay["impervious"],
+            "raw impervious fraction": None,
+            "raw surface_height m": None}
     out = {}
     for nm, v in rows.items():
-        p = v if nm == "susceptibility" else pct_norm(v)
-        vals = [float(p[m].mean()) for m in masks]
+        if nm == "raw impervious fraction":
+            p = lay["impervious"]
+        elif nm == "raw surface_height m":
+            p = lay["surface_height"]
+        elif nm == "susceptibility":
+            p = s
+        else:
+            p = pct_norm(v)
+        vals = [float(np.nanmean(p[m])) for m in masks]
         out[nm] = [round(x, 4) for x in vals]
         print(f"  {nm:<26}" + "".join(f"{x:>9.3f}" for x in vals))
-    print("  -> every term falls with density. See step_susceptibility()'s "
-          "docstring: this is real terrain, and it is why InundaNet needs an "
-          "impervious/built-up feature that can push the other way.")
+    print("  -> every TERRAIN term still falls with density; only the "
+          "impervious term rises. That opposition is the whole point of "
+          "P2-T8, and it is what InundaNet has to learn the balance of.")
     return out
+
+
+# ============================================================ baseline compare
+
+def _index_from_weights(w: dict) -> np.ndarray:
+    """Rebuild a susceptibility field from an arbitrary weight vector."""
+    src = {"hand": ("g100_hand.tif", True), "twi": ("g100_twi.tif", False),
+           "slope": ("g100_slope.tif", True),
+           "dist_drain": ("g100_dist_drain.tif", False),
+           "impervious": ("g100_impervious.tif", False)}
+    tot = sum(w.values())
+    s = None
+    for k, v in w.items():
+        fname, invert = src[k]
+        t = pct_norm(read(STATIC / fname))
+        t = 1.0 - t if invert else t
+        s = (v / tot) * t if s is None else s + (v / tot) * t
+    return pct_norm(s)
+
+
+def baseline_comparison(g: Grids, cfg: dict) -> dict:
+    """Same checkpoints, same code, OLD terrain-only weights vs the new ones.
+
+    Kept because "adding imperviousness helped" is a claim, and a claim
+    without the counterfactual next to it is marketing. Both indices are
+    recomputed here from the identical 100 m layers, so the only thing that
+    differs between the two columns is the weight vector."""
+    from pyproj import Transformer
+
+    sh = cfg["static_hydro"]
+    base_w = sh.get("susceptibility_weights_terrain_only_baseline")
+    if not base_w:
+        return {}
+    old = _index_from_weights(base_w)
+    new = read(STATIC / "susceptibility.tif")
+    fo, fn = old[np.isfinite(old)], new[np.isfinite(new)]
+    tf = Transformer.from_crs(g.crs_geo, g.crs, always_xy=True)
+
+    print("\n  BEFORE / AFTER — the same map with and without the impervious "
+          "term.")
+    print(f"  terrain-only : " + "  ".join(f"{k} {v:.2f}"
+                                           for k, v in base_w.items()))
+    print(f"  with P2-T8   : " + "  ".join(
+        f"{k} {v:.2f}" for k, v in sh["susceptibility_weights"].items()))
+    print(f"  {'landmark':<16}{'cell before':>13}{'cell after':>12}"
+          f"{'300 m before':>14}{'300 m after':>13}")
+    rad = int(round(float(sh["hotspot_sample_radius_m"]) / g.res100))
+    out = {"weights_before": base_w,
+           "weights_after": sh["susceptibility_weights"],
+           "cell_level": {}}
+    for hp in sh["hotspot_checkpoints"]:
+        x, y = tf.transform(hp["lon"], hp["lat"])
+        c = int((x - g.x0) / g.res100)
+        r = int((g.y1 - y) / g.res100)
+        r0, r1 = max(r - rad, 0), min(r + rad + 1, g.ny100)
+        c0, c1 = max(c - rad, 0), min(c + rad + 1, g.nx100)
+        po = float((fo <= old[r, c]).mean() * 100)
+        pn = float((fn <= new[r, c]).mean() * 100)
+        no = float((fo <= np.nanmax(old[r0:r1, c0:c1])).mean() * 100)
+        nn = float((fn <= np.nanmax(new[r0:r1, c0:c1])).mean() * 100)
+        out["cell_level"][hp["name"]] = dict(
+            before=round(po, 2), after=round(pn, 2),
+            before_neighbourhood=round(no, 2), after_neighbourhood=round(nn, 2))
+        print(f"  {hp['name']:<16}{po:>12.1f}%{pn:>11.1f}%"
+              f"{no:>13.1f}%{nn:>12.1f}%")
+    out["ward_level"] = ward_percentiles(g, cfg, index=old, quiet=True)
+    return out
+
+
+# ============================================================ ward-level gate
+
+def ward_percentiles(g: Grids, cfg: dict, index: np.ndarray | None = None,
+                     quiet: bool = False) -> dict:
+    """Susceptibility aggregated to wards — the unit the product ships.
+
+    A 100 m cell percentile is a diagnostic. Nobody deploys a pump to a
+    100 m cell; they deploy it to a ward. Aggregating first and ranking
+    second is therefore not cosmetic — it is the actual decision scale, and
+    it averages out both the DSM's per-pixel noise and the fact that a
+    landmark's published lat/lon is only good to a block or two."""
+    try:
+        import geopandas as gpd
+    except ImportError:                              # noqa: BLE001
+        print("  !! geopandas unavailable — ward block skipped")
+        return {}
+
+    src = ROOT / "data" / "raw" / "Delhi_Wards.geojson"
+    if not src.exists():
+        print(f"  !! {src} missing — ward block skipped")
+        return {}
+
+    wards = gpd.read_file(src).to_crs(g.crs)
+    name_f = cfg["sources"]["ward_polygons"]["name_field"]
+    s = read(STATIC / "susceptibility.tif")
+    imp = read(STATIC / "g100_impervious.tif")
+    hand = read(STATIC / "g100_hand.tif")
+
+    # Rasterise ward index onto the SAME 100 m grid; no reprojection of the
+    # raster, so no resampling of the thing being measured.
+    idx = rasterize(((geom, i + 1) for i, geom in enumerate(wards.geometry)),
+                    out_shape=(g.ny100, g.nx100), transform=g.t100,
+                    fill=0, dtype="int32", all_touched=False)
+    covered = int((idx > 0).sum())
+    print(f"  {len(wards)} wards rasterised onto the 100 m grid: "
+          f"{covered:,} cells ({100*covered/idx.size:.1f} % of the AOI)")
+
+    recs = []
+    for i, nm in enumerate(wards[name_f], start=1):
+        m = idx == i
+        n = int(m.sum())
+        if n == 0:
+            continue
+        recs.append(dict(ward=str(nm).strip().upper(), ward_no=None, cells=n,
+                         susceptibility=float(np.nanmean(s[m])),
+                         impervious=float(np.nanmean(imp[m])),
+                         hand=float(np.nanmean(hand[m]))))
+    if not recs:
+        return {}
+
+    vals = np.array([r["susceptibility"] for r in recs])
+    order = np.argsort(-vals)
+    for r in recs:
+        r["percentile"] = round(float((vals <= r["susceptibility"]).mean()
+                                      * 100), 1)
+        r["susceptibility"] = round(r["susceptibility"], 4)
+        r["impervious"] = round(r["impervious"], 4)
+        r["hand"] = round(r["hand"], 2)
+        r.pop("ward_no")
+    for rank, i in enumerate(order, start=1):
+        recs[i]["rank"] = rank
+
+    by_name: dict[str, dict] = {}
+    for r in recs:
+        by_name.setdefault(r["ward"], r)
+
+    watch = [str(x).upper() for x in cfg["static_hydro"]["ward_report_names"]]
+    top_n = int(cfg["static_hydro"]["ward_report_top_n"])
+    need = float(cfg["static_hydro"]["hotspot_pass_percentile"])
+
+    print(f"\n  ward-level susceptibility (mean over the ward's cells), "
+          f"{len(recs)} wards, pass mark {need:.0f}th percentile")
+    print(f"  {'ward':<22}{'rank':>6}{'pctile':>9}{'suscept':>10}"
+          f"{'imperv':>9}{'HAND m':>9}")
+    print("  " + "-" * 65)
+    watched = []
+    for nm in watch:
+        r = by_name.get(nm)
+        if r is None:
+            print(f"  {nm:<22}  NOT FOUND in {src.name}")
+            continue
+        flag = "PASS" if r["percentile"] >= need else "FAIL"
+        watched.append(dict(r, result=flag))
+        print(f"  {nm:<22}{r['rank']:>6}{r['percentile']:>8.1f}%"
+              f"{r['susceptibility']:>10.4f}{r['impervious']:>9.3f}"
+              f"{r['hand']:>9.2f}   {flag}")
+
+    print(f"\n  top {top_n} wards by static susceptibility:")
+    top = [recs[i] for i in order[:top_n]]
+    for r in top:
+        print(f"  {r['rank']:>3}. {r['ward']:<24}{r['percentile']:>7.1f}%"
+              f"{r['susceptibility']:>10.4f}{r['impervious']:>9.3f}"
+              f"{r['hand']:>9.2f}")
+
+    n_pass = sum(1 for r in watched if r["result"] == "PASS")
+    print(f"\n  WARD GATE: {n_pass}/{len(watched)} watched wards at or above "
+          f"the {need:.0f}th percentile")
+    return dict(n_wards=len(recs), pass_percentile=need,
+                aggregation="mean of 100 m susceptibility within the ward polygon",
+                watched=watched, top=top,
+                n_watched_pass=n_pass, n_watched=len(watched))
 
 
 # ============================================================ main
@@ -1096,6 +1437,12 @@ def main() -> None:
 
         print("\n[P2-T7] distance-to-drain, drainage density")
         step_drain_metrics(g, cfg, args.force)
+
+    # Outside the --from-stack guard on purpose: P2-T8 does not touch the DEM
+    # or pysheds, it only warps two downloaded rasters onto the hydro grid, so
+    # it is cheap and there is never a reason to skip it.
+    print("\n[P2-T8] impervious (ESA WorldCover) + built-up (GHSL)")
+    step_impervious(g, cfg, args.force)
 
     print("\n[P2-T9] resample everything to the shared 100 m grid + stack")
     step_stack(g, cfg, args.force)

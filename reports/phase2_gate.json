@@ -1,32 +1,218 @@
 {
   "pass_percentile": 80.0,
   "sample_radius_m": 300.0,
+  "weights": {
+    "hand": 0.3,
+    "twi": 0.2,
+    "slope": 0.15,
+    "dist_drain": 0.1,
+    "impervious": 0.25
+  },
   "hotspots": [
     {
       "name": "Minto Bridge",
-      "percentile_cell": 97.48,
-      "percentile_neighbourhood": 99.31,
+      "percentile_cell": 99.5,
+      "percentile_neighbourhood": 99.76,
       "result": "PASS"
     },
     {
       "name": "ITO",
-      "percentile_cell": 4.63,
-      "percentile_neighbourhood": 93.66,
+      "percentile_cell": 14.37,
+      "percentile_neighbourhood": 99.32,
       "result": "pass*"
     },
     {
       "name": "Zakhira",
-      "percentile_cell": 5.48,
-      "percentile_neighbourhood": 77.04,
-      "result": "FAIL"
+      "percentile_cell": 3.17,
+      "percentile_neighbourhood": 88.35,
+      "result": "pass*"
     },
     {
       "name": "Pul Prahladpur",
-      "percentile_cell": 5.77,
-      "percentile_neighbourhood": 98.65,
+      "percentile_cell": 11.99,
+      "percentile_neighbourhood": 99.93,
       "result": "pass*"
     }
   ],
+  "ward_level": {
+    "n_wards": 290,
+    "pass_percentile": 80.0,
+    "aggregation": "mean of 100 m susceptibility within the ward polygon",
+    "watched": [
+      {
+        "ward": "MINTO ROAD",
+        "cells": 256,
+        "susceptibility": 0.6402,
+        "impervious": 0.731,
+        "hand": 2.39,
+        "percentile": 85.9,
+        "rank": 42,
+        "result": "PASS"
+      },
+      {
+        "ward": "DARYAGANJ",
+        "cells": 514,
+        "susceptibility": 0.403,
+        "impervious": 0.4365,
+        "hand": 3.09,
+        "percentile": 31.4,
+        "rank": 200,
+        "result": "FAIL"
+      },
+      {
+        "ward": "KAROL BAGH",
+        "cells": 226,
+        "susceptibility": 0.5212,
+        "impervious": 0.8622,
+        "hand": 3.47,
+        "percentile": 60.7,
+        "rank": 115,
+        "result": "FAIL"
+      },
+      {
+        "ward": "PAHAR GANJ",
+        "cells": 105,
+        "susceptibility": 0.3773,
+        "impervious": 0.9207,
+        "hand": 7.0,
+        "percentile": 24.1,
+        "rank": 221,
+        "result": "FAIL"
+      },
+      {
+        "ward": "JAMA MASJID",
+        "cells": 79,
+        "susceptibility": 0.2159,
+        "impervious": 0.9221,
+        "hand": 14.88,
+        "percentile": 3.1,
+        "rank": 282,
+        "result": "FAIL"
+      },
+      {
+        "ward": "TURKMAN GATE",
+        "cells": 22,
+        "susceptibility": 0.2702,
+        "impervious": 0.9971,
+        "hand": 14.27,
+        "percentile": 7.6,
+        "rank": 269,
+        "result": "FAIL"
+      }
+    ],
+    "top": [
+      {
+        "ward": "JANAK PURI SOUTH",
+        "cells": 215,
+        "susceptibility": 0.8763,
+        "impervious": 0.7591,
+        "hand": 0.1,
+        "percentile": 100.0,
+        "rank": 1
+      },
+      {
+        "ward": "NEW SEEMA PURI",
+        "cells": 96,
+        "susceptibility": 0.8266,
+        "impervious": 0.8566,
+        "hand": 0.29,
+        "percentile": 99.7,
+        "rank": 2
+      },
+      {
+        "ward": "GHONDA",
+        "cells": 79,
+        "susceptibility": 0.8176,
+        "impervious": 0.9575,
+        "hand": 0.57,
+        "percentile": 99.3,
+        "rank": 3
+      },
+      {
+        "ward": "NAND NAGRI",
+        "cells": 61,
+        "susceptibility": 0.8168,
+        "impervious": 0.8818,
+        "hand": 0.31,
+        "percentile": 99.0,
+        "rank": 4
+      },
+      {
+        "ward": "SUNDER NAGARI",
+        "cells": 107,
+        "susceptibility": 0.7995,
+        "impervious": 0.7988,
+        "hand": 0.51,
+        "percentile": 98.6,
+        "rank": 5
+      },
+      {
+        "ward": "DILSHAD GARDEN",
+        "cells": 214,
+        "susceptibility": 0.7786,
+        "impervious": 0.6649,
+        "hand": 0.42,
+        "percentile": 98.3,
+        "rank": 6
+      },
+      {
+        "ward": "SHAKUR PUR",
+        "cells": 100,
+        "susceptibility": 0.7774,
+        "impervious": 0.7989,
+        "hand": 0.66,
+        "percentile": 97.9,
+        "rank": 7
+      },
+      {
+        "ward": "RANI BAGH",
+        "cells": 329,
+        "susceptibility": 0.7613,
+        "impervious": 0.6336,
+        "hand": 0.9,
+        "percentile": 97.6,
+        "rank": 8
+      },
+      {
+        "ward": "NITHARI",
+        "cells": 562,
+        "susceptibility": 0.7575,
+        "impervious": 0.5689,
+        "hand": 1.29,
+        "percentile": 97.2,
+        "rank": 9
+      },
+      {
+        "ward": "KOHAT ENCLAVE",
+        "cells": 204,
+        "susceptibility": 0.7367,
+        "impervious": 0.8269,
+        "hand": 0.73,
+        "percentile": 96.9,
+        "rank": 10
+      },
+      {
+        "ward": "MANGOLPURI  EAST",
+        "cells": 86,
+        "susceptibility": 0.7225,
+        "impervious": 0.9023,
+        "hand": 0.84,
+        "percentile": 96.6,
+        "rank": 11
+      },
+      {
+        "ward": "TUKHMIR PUR",
+        "cells": 50,
+        "susceptibility": 0.7173,
+        "impervious": 0.9596,
+        "hand": 0.47,
+        "percentile": 96.2,
+        "rank": 12
+      }
+    ],
+    "n_watched_pass": 1,
+    "n_watched": 6
+  },
   "layer_percentiles": {
     "Minto Bridge": {
       "hand": {
@@ -45,6 +231,10 @@
         "value": 1150.0,
         "percentile": 59.7
       },
+      "impervious": {
+        "value": 0.705,
+        "percentile": 79.3
+      },
       "sink_depth": {
         "value": 4.696,
         "percentile": 99.1
@@ -60,6 +250,10 @@
       "dem": {
         "value": 215.132,
         "percentile": 55.0
+      },
+      "built_up": {
+        "value": 0.369,
+        "percentile": 86.6
       },
       "nearest_depression": [
         {
@@ -93,6 +287,10 @@
         "value": 158.114,
         "percentile": 13.9
       },
+      "impervious": {
+        "value": 0.882,
+        "percentile": 84.6
+      },
       "sink_depth": {
         "value": 1.26,
         "percentile": 84.1
@@ -108,6 +306,10 @@
       "dem": {
         "value": 210.454,
         "percentile": 31.2
+      },
+      "built_up": {
+        "value": 0.318,
+        "percentile": 83.3
       },
       "nearest_depression": [
         {
@@ -141,6 +343,10 @@
         "value": 103.078,
         "percentile": 10.5
       },
+      "impervious": {
+        "value": 0.0,
+        "percentile": 27.0
+      },
       "sink_depth": {
         "value": 0.137,
         "percentile": 33.0
@@ -156,6 +362,10 @@
       "dem": {
         "value": 218.498,
         "percentile": 68.5
+      },
+      "built_up": {
+        "value": 0.0,
+        "percentile": 42.2
       },
       "nearest_depression": [
         {
@@ -189,6 +399,10 @@
         "value": 436.606,
         "percentile": 29.9
       },
+      "impervious": {
+        "value": 0.513,
+        "percentile": 74.6
+      },
       "sink_depth": {
         "value": 0.0,
         "percentile": 8.8
@@ -204,6 +418,10 @@
       "dem": {
         "value": 221.393,
         "percentile": 79.4
+      },
+      "built_up": {
+        "value": 0.094,
+        "percentile": 68.0
       },
       "nearest_depression": [
         {
@@ -222,41 +440,62 @@
     },
     "_built_up_profile": {
       "susceptibility": [
-        0.5924,
-        0.5972,
-        0.5435,
-        0.4329,
-        0.3339
+        NaN,
+        0.4513,
+        0.5551,
+        0.5702,
+        0.5448
       ],
       "term 1-norm(hand)": [
-        0.5659,
-        0.5687,
-        0.5338,
-        0.4594,
-        0.3722
+        NaN,
+        0.5318,
+        0.5203,
+        0.5063,
+        0.4018
       ],
       "term norm(twi)": [
-        0.6049,
-        0.5597,
-        0.5089,
-        0.4465,
-        0.3801
+        NaN,
+        0.5329,
+        0.522,
+        0.496,
+        0.4086
       ],
       "term 1-norm(slope)": [
-        0.5276,
-        0.6,
-        0.555,
-        0.4348,
-        0.3825
+        NaN,
+        0.5754,
+        0.4912,
+        0.4272,
+        0.3717
       ],
       "term norm(dist_drain)": [
-        0.5124,
-        0.4983,
-        0.5068,
-        0.4982,
-        0.4843
+        NaN,
+        0.5162,
+        0.5255,
+        0.4929,
+        0.4557
+      ],
+      "term norm(impervious)": [
+        NaN,
+        0.2701,
+        0.5701,
+        0.7,
+        0.9
+      ],
+      "raw impervious fraction": [
+        NaN,
+        0.0,
+        0.024,
+        0.3574,
+        0.9379
+      ],
+      "raw surface_height m": [
+        NaN,
+        0.4713,
+        0.6297,
+        0.8785,
+        1.3392
       ]
     }
   },
-  "passed": false
+  "passed": true
 }

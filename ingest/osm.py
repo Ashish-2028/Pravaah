@@ -49,6 +49,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CONFIG = ROOT / "configs" / "aoi_delhi_ncr.yaml"
 RAW = ROOT / "data" / "raw" / "osm"
 CACHE = ROOT / "data" / "raw" / "osm_cache"
+CACHE_DIRECT = ROOT / "data" / "raw" / "osm_cache_direct"
 
 # Tag queries. These are OSM schema, not region facts — they are the same for
 # any city on Earth, which is exactly why they live in code and the bbox does not.
@@ -153,9 +154,165 @@ TILE_FIRST = {"roads": 4}
 # Hard wall-clock ceiling on any single socket operation. See setup_osmnx().
 SOCKET_TIMEOUT_S = 180.0
 
+# Layers fetched by _overpass_direct() instead of osmnx. See that function.
+DIRECT_LAYERS = {"roads"}
+OVERPASS_ENDPOINTS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.osm.ch/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+]
+USER_AGENT = "PRAVAAH-SIH2026 (static hydrology ingest; contact via repo)"
+
+
+def _overpass_direct(tags: dict, tile: tuple, timeout: int = 180
+                     ) -> gpd.GeoDataFrame:
+    """Query Overpass with plain `requests`, bypassing osmnx's HTTP stack.
+
+    WHY THIS EXISTS (probed 31 Aug 2026). osmnx's requests could not reach
+    overpass-api.de at all for the road layer — ConnectionError / "Connection
+    refused" on every attempt — while, at the same moment:
+      * `curl` to /api/interpreter returned HTTP 200 in 1.1 s, and
+      * plain `requests.post` from the SAME interpreter returned 200 in 0.9 s
+        against overpass-api.de, overpass.osm.ch and maps.mail.ru.
+    This environment ships urllib3-future (note `urllib3/contrib/resolver/` in
+    the tracebacks), whose custom DNS resolver and HTTP/2 negotiation osmnx's
+    session picks up. Rather than fight a transport bug in a 20-hour build,
+    the heavy layer takes the path that demonstrably works.
+
+    Raw responses are cached to data/raw/osm_cache_direct/ (charter R6).
+    """
+    import json
+    import hashlib
+
+    import requests
+    from shapely.geometry import LineString
+
+    (w, s, e, n) = tile
+    key, vals = next(iter(tags.items()))
+    pattern = "|".join(vals)
+    q = (f'[out:json][timeout:{timeout}];'
+         f'way["{key}"~"^({pattern})$"]({s},{w},{n},{e});out geom;')
+
+    CACHE_DIRECT.mkdir(parents=True, exist_ok=True)
+    cf = CACHE_DIRECT / (hashlib.sha1(q.encode()).hexdigest() + ".json")
+    if cf.exists():
+        data = json.loads(cf.read_text())
+    else:
+        last = None
+        for attempt, url in enumerate(OVERPASS_ENDPOINTS * 2):
+            try:
+                r = requests.post(url, data={"data": q}, timeout=timeout + 30,
+                                  headers={"User-Agent": USER_AGENT})
+                r.raise_for_status()
+                data = r.json()
+                # Overpass signals timeouts and out-of-memory in a `remark`
+                # field WITH HTTP 200 and an empty element list. Caching that
+                # would silently bake a hole into the layer.
+                if data.get("remark"):
+                    raise RuntimeError(f"Overpass remark: {data['remark'][:120]}")
+                # NEVER cache an empty result. Overpass under load returns
+                # HTTP 200 with zero elements and no remark; caching that
+                # bakes a permanent hole into the layer that a re-run would
+                # happily "resume" past. An empty tile is treated as a
+                # failure and retried; a genuinely empty tile costs us only
+                # the retries.
+                if not data.get("elements"):
+                    raise RuntimeError("empty element list (Overpass under "
+                                       "load) — not cached, will retry")
+                cf.write_text(json.dumps(data))
+                break
+            except Exception as exc:  # noqa: BLE001
+                last = exc
+                print(f"        {url.split('/')[2]}: "
+                      f"{type(exc).__name__}: {str(exc)[:80]}", flush=True)
+                time.sleep(3 * (attempt + 1))
+        else:
+            raise RuntimeError(f"all Overpass endpoints failed: {last}")
+
+    rows = []
+    for el in data.get("elements", []):
+        if el.get("type") != "way" or "geometry" not in el:
+            continue
+        pts = [(p["lon"], p["lat"]) for p in el["geometry"]]
+        if len(pts) < 2:
+            continue
+        t = el.get("tags", {})
+        rows.append({"osmid": el["id"], key: t.get(key),
+                     "name": t.get("name"), "geometry": LineString(pts)})
+    if not rows:
+        return gpd.GeoDataFrame({"osmid": [], key: [], "name": [],
+                                 "geometry": []},
+                                geometry="geometry", crs="EPSG:4326")
+    return gpd.GeoDataFrame(rows, geometry="geometry", crs="EPSG:4326")
+
+
+def _fetch_tile_adaptive(tags: dict, tile: tuple, label: str,
+                         depth: int = 0, max_depth: int = 2) -> list | None:
+    """Fetch one tile, splitting it into quarters if Overpass cannot serve it.
+
+    Dense central-Delhi tiles blow Overpass's time/memory limits and come back
+    as HTTP 200 with an empty element list. The fix is not to retry the same
+    query harder, it is to ask a smaller question — so a failure recurses into
+    2x2 sub-tiles. Returns None only if even the smallest sub-tile fails.
+    """
+    try:
+        g = _overpass_direct(tags, tile)
+        print(f"      tile {label}: {len(g)} ways", flush=True)
+        return [g] if len(g) else []
+    except Exception as exc:  # noqa: BLE001
+        if depth >= max_depth:
+            print(f"      tile {label}: FAILED at max depth — "
+                  f"{str(exc)[:80]}", flush=True)
+            return None
+        print(f"      tile {label}: {str(exc)[:70]} -> splitting 2x2",
+              flush=True)
+        w, s, e, n_ = tile
+        sub = _tiles({"west": w, "south": s, "east": e, "north": n_}, 2)
+        out, failed = [], 0
+        for k, q in enumerate(sub, 1):
+            r = _fetch_tile_adaptive(tags, q, f"{label}.{k}", depth + 1,
+                                     max_depth)
+            if r is None:
+                failed += 1
+            else:
+                out.extend(r)
+        return None if failed == len(sub) else out
+
+
+def _write_manifest(name: str, total: int, missing: list) -> None:
+    """Record layer completeness next to the parquet.
+
+    A road layer with a hole in central Delhi is WORSE than no road layer:
+    the numbers look plausible and nothing complains. This file is how
+    downstream code finds out."""
+    import json
+
+    RAW.mkdir(parents=True, exist_ok=True)
+    (RAW / f"{name}.meta.json").write_text(json.dumps(dict(
+        layer=name, tiles_total=total, tiles_missing=missing,
+        complete=not missing,
+        fetched=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())), indent=2))
+
 
 def _tiled_fetch(ox, name: str, tags: dict, bbox: dict, n: int,
                  retries: int = 3) -> list:
+    if name in DIRECT_LAYERS:
+        parts, missing = [], []
+        tiles = _tiles(bbox, n)
+        for i, q in enumerate(tiles, 1):
+            got = _fetch_tile_adaptive(tags, q, f"{i}/{len(tiles)}")
+            if got is None:
+                missing.append(i)
+                continue
+            parts.extend(got)
+        _write_manifest(name, len(tiles), missing)
+        if missing:
+            print(f"    !! {len(missing)}/{len(tiles)} tiles MISSING "
+                  f"({missing}). The layer is INCOMPLETE and "
+                  f"{name}.meta.json says so — downstream code must refuse to "
+                  f"treat it as complete. Re-run to retry only these tiles.")
+        return parts
+
     parts = []
     tiles = _tiles(bbox, n)
     for i, q in enumerate(tiles, 1):
