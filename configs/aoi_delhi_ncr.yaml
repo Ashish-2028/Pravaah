@@ -76,6 +76,52 @@ fitted:
   stream_threshold_score_table: null
   operating_point_chosen: null       # <- written by models/calibrate.py
 
+# ------------------------------------------------- static hydrology (Phase 2)
+# Every knob features/static_hydro.py turns lives here, never in Python (R7).
+static_hydro:
+  # Terrain analysis runs at 25 m, an EXACT 4x refinement of the 100 m
+  # inundation grid. 100 m layers are then a pure 4x4 block aggregate of the
+  # 25 m layers — no interpolation, so no possible sub-pixel misalignment.
+  hydro_resolution_m: 25
+
+  # Buffer used to score DEM-derived streams against OSM waterways (P2-T3).
+  # OSM centrelines and a 30 m DEM's channel will never coincide cell-for-cell;
+  # a match tolerance is what makes the F1 meaningful rather than ~0 for every
+  # candidate. 150 m = 6 hydro cells = 5 x the DEM's own posting.
+  stream_match_tolerance_m: 150
+
+  # OSM waterway values treated as "the drainage network" for scoring and for
+  # the distance-to-drain / drainage-density rasters.
+  drain_waterway_values: [drain, canal, river, stream, ditch]
+
+  # Moving-window side length for drainage density (km of channel per km^2).
+  drainage_density_window_m: 1000
+
+  # Static susceptibility weights (P2-T10). DETERMINISTIC and documented —
+  # this is not a learned model and we say so (charter R9). Terms are each
+  # percentile-normalised to [0,1] and oriented so that 1 = more flood-prone.
+  #   hand       1 - norm(HAND)           water pools where the ground sits low
+  #                                       above its own drainage
+  #   twi        norm(TWI)                big upslope area feeding a flat cell
+  #   slope      1 - norm(slope)          flat ground does not shed water
+  #   dist_drain norm(distance-to-drain)  far from any drain = nowhere to go
+  susceptibility_weights:
+    hand:       0.40
+    twi:        0.25
+    slope:      0.20
+    dist_drain: 0.15
+
+  # Exit-gate landmarks. Known Delhi waterlogging blackspots, held out of every
+  # computation above — they are the CHECK, never an input (PRAVAAH.md 7.3).
+  # A terrain-only susceptibility map must already rank them in the top quintile.
+  hotspot_checkpoints:
+    - {name: "Minto Bridge",   lat: 28.6328, lon: 77.2197}
+    - {name: "ITO",            lat: 28.6280, lon: 77.2410}
+    - {name: "Zakhira",        lat: 28.6683, lon: 77.1553}
+    - {name: "Pul Prahladpur", lat: 28.4922, lon: 77.2870}
+  hotspot_pass_percentile: 80.0
+  hotspot_sample_radius_m: 300   # landmark coords are approximate; report both
+
 # --------------------------------------------------------------- risk bands
 risk_bands:                 # applied to risk_score
   low:      [0.00, 0.25]

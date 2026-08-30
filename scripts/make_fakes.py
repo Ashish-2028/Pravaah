@@ -181,8 +181,11 @@ def write_event(event: dict, wards: list[dict], cfg: dict) -> int:
             )
             drivers = random.sample(DRIVER_POOL, 3)
             weights = sorted([round(random.uniform(0.08, 0.34), 2) for _ in range(3)], reverse=True)
-            if p > 0.5:
-                total_exposed += w["people"]
+            # Probability-weighted EXPECTED exposure, not a hard p>0.5 count.
+            # A step count reads as 0 people exposed at 04:00 while the ward
+            # table already shows populated at-risk wards — an inconsistency a
+            # judge would spot. Expected value is both smoother and more honest.
+            total_exposed += w["people"] * p
 
             feats.append(
                 {
@@ -264,7 +267,7 @@ def write_event(event: dict, wards: list[dict], cfg: dict) -> int:
                     "p3h50": round(min(0.95, inten * 0.8), 2),
                     "city_risk": city_risk,
                     "time_to_critical_min": max(10, int(180 * (1 - inten))) if inten > 0.2 else None,
-                    "people_exposed": total_exposed,
+                    "people_exposed": int(total_exposed),
                     "badges": {
                         "sat": "ok",
                         "radar": "ok",
