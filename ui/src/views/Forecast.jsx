@@ -166,8 +166,8 @@ export default function Forecast() {
                     labelStyle={{ color: '#8ba0bd' }}
                     formatter={(v, n) => [`${num(v, 1)} mm`, n === 'band' ? 'q10→q90 band' : n]}
                   />
-                  <Bar dataKey="q10" stackId="a" fill="transparent" />
-                  <Bar dataKey="band" stackId="a" radius={[3, 3, 0, 0]}>
+                  <Bar isAnimationActive={false} dataKey="q10" stackId="a" fill="transparent" />
+                  <Bar isAnimationActive={false} dataKey="band" stackId="a" radius={[3, 3, 0, 0]}>
                     {fan.map((f) => (
                       <Cell key={f.cell} fill={f.q90 >= threshold ? '#ef4444' : '#14b8a6'} />
                     ))}

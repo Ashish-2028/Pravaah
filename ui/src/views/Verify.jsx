@@ -149,7 +149,7 @@ function Reliability({ reliability }) {
               strokeDasharray="5 4"
               ifOverflow="extendDomain"
             />
-            <Scatter data={points} fill="#14b8a6" />
+            <Scatter isAnimationActive={false} data={points} fill="#14b8a6" />
           </ScatterChart>
         </ResponsiveContainer>
       </div>
@@ -193,9 +193,10 @@ function SkillVsLead({ rows }) {
             />
             <YAxis {...AXIS} domain={[0, 'auto']} />
             <Tooltip {...TIP} formatter={(v, n) => [num(v, 3), n]} labelFormatter={(v) => `Lead ${v} h`} />
-            <Legend wrapperStyle={{ fontSize: 11, color: '#8ba0bd' }} />
+            <Legend verticalAlign="top" height={22} wrapperStyle={{ fontSize: 11, color: '#8ba0bd' }} />
             {models.map((m, i) => (
               <Line
+                isAnimationActive={false}
                 key={m}
                 type="monotone"
                 dataKey={m}

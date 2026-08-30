@@ -72,8 +72,10 @@ thresholds:
 # script that fitted it, together with the score table it was chosen from.
 fitted:
   stream_threshold_search: [100, 250, 500, 1000, 2500]
-  stream_threshold_chosen: null      # <- written by features/static_hydro.py
-  stream_threshold_score_table: null
+  # FITTED by features/static_hydro.py on 2026-08-31: F1 of (flow_acc > threshold) against
+  # OSM waterways, buffered match tolerance 150 m. Units: 25 m accumulation cells.
+  stream_threshold_chosen: 2500
+  stream_threshold_score_table: [{"threshold_cells": 100, "min_drainage_area_km2": 0.0625, "stream_cells": 573329, "precision": 0.1292, "recall": 0.7841, "f1": 0.2218}, {"threshold_cells": 250, "min_drainage_area_km2": 0.1562, "stream_cells": 378551, "precision": 0.1454, "recall": 0.6492, "f1": 0.2375}, {"threshold_cells": 500, "min_drainage_area_km2": 0.3125, "stream_cells": 276966, "precision": 0.1629, "recall": 0.5664, "f1": 0.253}, {"threshold_cells": 1000, "min_drainage_area_km2": 0.625, "stream_cells": 201008, "precision": 0.1869, "recall": 0.4971, "f1": 0.2717}, {"threshold_cells": 2500, "min_drainage_area_km2": 1.5625, "stream_cells": 131011, "precision": 0.2306, "recall": 0.4218, "f1": 0.2982}]
   operating_point_chosen: null       # <- written by models/calibrate.py
 
 # ------------------------------------------------- static hydrology (Phase 2)
@@ -83,6 +85,17 @@ static_hydro:
   # inundation grid. 100 m layers are then a pure 4x4 block aggregate of the
   # 25 m layers — no interpolation, so no possible sub-pixel misalignment.
   hydro_resolution_m: 25
+
+  # Copernicus GLO-30 is a DSM (Digital SURFACE Model): it includes buildings,
+  # trees, flyovers and rail embankments. Those are not terrain, and in dense
+  # Delhi they are 5-20 m of noise on a city whose real relief is ~30 m. Left
+  # alone they wreck the pipeline in a specific, measurable way: a grey-scale
+  # morphological OPENING with a structuring element wider than a building
+  # footprint removes narrow positive features (roofs, embankments) while
+  # leaving depressions — underpasses, the very blackspots we care about —
+  # completely untouched. 175 m is wider than a Delhi city block and much
+  # narrower than any real landform here.
+  bare_earth_opening_m: 175
 
   # Buffer used to score DEM-derived streams against OSM waterways (P2-T3).
   # OSM centrelines and a 30 m DEM's channel will never coincide cell-for-cell;

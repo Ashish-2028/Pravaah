@@ -59,11 +59,27 @@ LAYERS: dict[str, dict] = {
         "man_made": ["pumping_station", "water_works", "water_tower"],
         "amenity": ["pumping_station"],
     },
+    # The drivable road network as plain WAYS.
+    #
+    # Deliberately NOT ox.graph_from_bbox. Probed 31 Aug 2026: the graph query
+    # over the full 80x73 km AOI hung for 35+ minutes while Overpass's own
+    # /api/status reported no query running for us — the graph builder is by
+    # far the heaviest thing osmnx can ask for, and it is the one request the
+    # server drops. The feature query below returns the same geometry in
+    # seconds. P2-T11 needs road KILOMETRES per ward, which is a length sum
+    # over LineStrings; it does not need a routable topology. If a later phase
+    # needs routing, pull the graph then, separately, and cache it.
+    "roads": {"highway": [
+        "motorway", "motorway_link", "trunk", "trunk_link",
+        "primary", "primary_link", "secondary", "secondary_link",
+        "tertiary", "tertiary_link", "unclassified", "residential",
+        "living_street",
+    ]},
 }
 
 # Columns worth keeping. Everything else in OSM is free-form and will not
 # survive a parquet round-trip.
-KEEP = ["osmid", "name", "amenity", "waterway", "man_made", "width",
+KEEP = ["osmid", "name", "amenity", "waterway", "man_made", "highway", "width",
         "intermittent", "tunnel", "covered", "geometry"]
 
 
@@ -171,20 +187,51 @@ def pull_drive_network(ox, bbox: dict, force: bool) -> Path:
     box = (bbox["west"], bbox["south"], bbox["east"], bbox["north"])
     print("  querying roads       network_type=drive (this is the slow one)",
           flush=True)
-    for attempt in range(3):
-        try:
-            G = ox.graph_from_bbox(box, network_type="drive",
-                                   simplify=True, retain_all=True)
-            break
-        except Exception as exc:  # noqa: BLE001
-            print(f"    attempt {attempt+1}/3 failed: "
-                  f"{type(exc).__name__}: {str(exc)[:160]}")
-            if attempt == 2:
-                raise
-            time.sleep(10 * (2 ** attempt))
 
-    nodes, edges = ox.graph_to_gdfs(G)
-    edges = edges.reset_index()
+    def _graph(b, tries=3, wait0=15):
+        for a in range(tries):
+            try:
+                return ox.graph_from_bbox(b, network_type="drive",
+                                          simplify=True, retain_all=True)
+            except Exception as exc:  # noqa: BLE001
+                print(f"      attempt {a+1}/{tries}: "
+                      f"{type(exc).__name__}: {str(exc)[:130]}")
+                if a < tries - 1:
+                    time.sleep(wait0 * (2 ** a))
+        return None
+
+    frames = []
+    G = _graph(box)
+    if G is not None:
+        nodes, edges = ox.graph_to_gdfs(G)
+        frames.append(edges.reset_index())
+    else:
+        # The whole-AOI drive graph is by far the heaviest Overpass query we
+        # make and it is the one that gets refused. Quadrants are four small
+        # queries instead of one huge one; duplicate edges across the seams are
+        # dropped by osmid afterwards.
+        print("    whole-bbox drive graph refused; splitting into quadrants")
+        nodes = []
+        for i, q in enumerate(_quadrants(bbox), 1):
+            g = _graph(q)
+            if g is None:
+                print(f"      quadrant {i}: GAVE UP")
+                continue
+            n, e = ox.graph_to_gdfs(g)
+            print(f"      quadrant {i}: {len(e)} edges")
+            frames.append(e.reset_index())
+            nodes.append(n)
+        if not frames:
+            raise RuntimeError("Overpass refused the drive network on every "
+                               "path — re-run ingest/osm.py later")
+        nodes = pd.concat(nodes)
+
+    edges = pd.concat(frames, ignore_index=True)
+    if "osmid" in edges.columns:
+        before = len(edges)
+        edges = edges.drop_duplicates(subset=["u", "v", "key"])
+        if before != len(edges):
+            print(f"    dropped {before-len(edges)} duplicate seam edges")
     keep = [c for c in ["u", "v", "key", "osmid", "name", "highway",
                         "length", "geometry"] if c in edges.columns]
     edges = edges[keep].copy()
@@ -216,6 +263,9 @@ def main() -> None:
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--status", action="store_true")
     ap.add_argument("--skip-roads", action="store_true")
+    ap.add_argument("--graph", action="store_true",
+                    help="ALSO pull the routable drive graph. Slow and often "
+                         "refused by Overpass; not needed for P2-T11.")
     args = ap.parse_args()
 
     if args.status:
@@ -230,9 +280,11 @@ def main() -> None:
     print(f"osmnx {ox.__version__}  cache -> {CACHE}\n")
 
     for name, tags in LAYERS.items():
+        if name == "roads" and args.skip_roads:
+            continue
         pull_layer(ox, name, tags, bbox, args.force)
 
-    if not args.skip_roads:
+    if args.graph:
         pull_drive_network(ox, bbox, args.force)
 
     print()

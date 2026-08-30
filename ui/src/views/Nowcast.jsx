@@ -172,9 +172,9 @@ export default function Nowcast() {
                     labelStyle={{ color: '#8ba0bd' }}
                     formatter={(v, n) => [num(v, 3), n]}
                   />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Legend verticalAlign="top" height={20} wrapperStyle={{ fontSize: 11 }} />
                   {skill.models.map((mm) => (
-                    <Line key={mm} type="monotone" dataKey={mm} stroke="#14b8a6" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line isAnimationActive={false} key={mm} type="monotone" dataKey={mm} stroke="#14b8a6" strokeWidth={2} dot={{ r: 3 }} />
                   ))}
                 </LineChart>
               </ResponsiveContainer>

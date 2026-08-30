@@ -244,6 +244,7 @@ export default function Replay() {
       <AdvisoryDrawer
         open={advisoryOpen}
         wardId={selectedWard}
+        ward={ward}
         event={event}
         t={t}
         onClose={closeAdvisory}

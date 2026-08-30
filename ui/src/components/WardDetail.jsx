@@ -62,8 +62,8 @@ function Timeline({ rows }) {
             strokeDasharray="4 3"
             label={{ value: 'operating point', fill: '#f59e0b', fontSize: 9, position: 'insideTopRight' }}
           />
-          <Area type="monotone" dataKey="p" stroke="#14b8a6" strokeWidth={2} fill="url(#pgrad)" />
-          <Area type="monotone" dataKey="r" stroke="#f59e0b" strokeWidth={1.2} fill="none" strokeDasharray="3 3" />
+          <Area isAnimationActive={false} type="monotone" dataKey="p" stroke="#14b8a6" strokeWidth={2} fill="url(#pgrad)" />
+          <Area isAnimationActive={false} type="monotone" dataKey="r" stroke="#f59e0b" strokeWidth={1.2} fill="none" strokeDasharray="3 3" />
         </AreaChart>
       </ResponsiveContainer>
     </div>

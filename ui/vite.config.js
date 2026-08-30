@@ -7,6 +7,11 @@ import tailwindcss from '@tailwindcss/vite'
 // origin. Net effect: no CORS, ever, and the built app works with wifi off.
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // NOTE: maplibre-gl is deliberately NOT in optimizeDeps.exclude.
+  // Letting Vite bundle it normally is what makes its module worker
+  // (`new Worker(new URL(...), { type: 'module' })`) get emitted correctly.
+  // Excluding it and pinning the worker by hand via setWorkerUrl() produces a
+  // silently blank map — see the long comment at the top of MapCanvas.jsx.
   server: {
     proxy: {
       '/api': 'http://localhost:8000',

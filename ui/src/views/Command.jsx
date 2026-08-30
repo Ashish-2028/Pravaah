@@ -174,6 +174,7 @@ export default function Command() {
       <AdvisoryDrawer
         open={advisoryOpen}
         wardId={selectedWard}
+        ward={ward}
         event={event}
         t={t}
         onClose={closeAdvisory}

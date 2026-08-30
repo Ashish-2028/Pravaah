@@ -89,6 +89,7 @@ export default function Inundation() {
       <AdvisoryDrawer
         open={advisoryOpen}
         wardId={selectedWard}
+        ward={ward}
         event={event}
         t={t}
         onClose={closeAdvisory}

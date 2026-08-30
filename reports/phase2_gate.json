@@ -1,0 +1,262 @@
+{
+  "pass_percentile": 80.0,
+  "sample_radius_m": 300.0,
+  "hotspots": [
+    {
+      "name": "Minto Bridge",
+      "percentile_cell": 97.48,
+      "percentile_neighbourhood": 99.31,
+      "result": "PASS"
+    },
+    {
+      "name": "ITO",
+      "percentile_cell": 4.63,
+      "percentile_neighbourhood": 93.66,
+      "result": "pass*"
+    },
+    {
+      "name": "Zakhira",
+      "percentile_cell": 5.48,
+      "percentile_neighbourhood": 77.04,
+      "result": "FAIL"
+    },
+    {
+      "name": "Pul Prahladpur",
+      "percentile_cell": 5.77,
+      "percentile_neighbourhood": 98.65,
+      "result": "pass*"
+    }
+  ],
+  "layer_percentiles": {
+    "Minto Bridge": {
+      "hand": {
+        "value": 0.0,
+        "percentile": 8.9
+      },
+      "twi": {
+        "value": 16.333,
+        "percentile": 87.7
+      },
+      "slope": {
+        "value": 0.0,
+        "percentile": 5.6
+      },
+      "dist_drain": {
+        "value": 1150.0,
+        "percentile": 59.7
+      },
+      "sink_depth": {
+        "value": 4.696,
+        "percentile": 99.1
+      },
+      "flow_acc": {
+        "value": 496.0,
+        "percentile": 85.2
+      },
+      "surface_height": {
+        "value": 1.19,
+        "percentile": 81.3
+      },
+      "dem": {
+        "value": 215.132,
+        "percentile": 55.0
+      },
+      "nearest_depression": [
+        {
+          "radius_m": 100,
+          "depth_m": 7.77,
+          "d_north_m": -25,
+          "d_east_m": -50
+        },
+        {
+          "radius_m": 300,
+          "depth_m": 7.77,
+          "d_north_m": -25,
+          "d_east_m": -50
+        }
+      ]
+    },
+    "ITO": {
+      "hand": {
+        "value": 1.481,
+        "percentile": 63.1
+      },
+      "twi": {
+        "value": 10.127,
+        "percentile": 5.0
+      },
+      "slope": {
+        "value": 3.036,
+        "percentile": 97.7
+      },
+      "dist_drain": {
+        "value": 158.114,
+        "percentile": 13.9
+      },
+      "sink_depth": {
+        "value": 1.26,
+        "percentile": 84.1
+      },
+      "flow_acc": {
+        "value": 19.0,
+        "percentile": 43.3
+      },
+      "surface_height": {
+        "value": 0.601,
+        "percentile": 63.0
+      },
+      "dem": {
+        "value": 210.454,
+        "percentile": 31.2
+      },
+      "nearest_depression": [
+        {
+          "radius_m": 100,
+          "depth_m": 3.04,
+          "d_north_m": 75,
+          "d_east_m": -75
+        },
+        {
+          "radius_m": 300,
+          "depth_m": 3.2,
+          "d_north_m": -275,
+          "d_east_m": -50
+        }
+      ]
+    },
+    "Zakhira": {
+      "hand": {
+        "value": 7.492,
+        "percentile": 88.5
+      },
+      "twi": {
+        "value": 11.918,
+        "percentile": 35.4
+      },
+      "slope": {
+        "value": 0.665,
+        "percentile": 77.2
+      },
+      "dist_drain": {
+        "value": 103.078,
+        "percentile": 10.5
+      },
+      "sink_depth": {
+        "value": 0.137,
+        "percentile": 33.0
+      },
+      "flow_acc": {
+        "value": 7.0,
+        "percentile": 19.7
+      },
+      "surface_height": {
+        "value": 1.253,
+        "percentile": 82.6
+      },
+      "dem": {
+        "value": 218.498,
+        "percentile": 68.5
+      },
+      "nearest_depression": [
+        {
+          "radius_m": 100,
+          "depth_m": 0.19,
+          "d_north_m": 25,
+          "d_east_m": -25
+        },
+        {
+          "radius_m": 300,
+          "depth_m": 13.75,
+          "d_north_m": -225,
+          "d_east_m": -300
+        }
+      ]
+    },
+    "Pul Prahladpur": {
+      "hand": {
+        "value": 1.903,
+        "percentile": 67.9
+      },
+      "twi": {
+        "value": 10.643,
+        "percentile": 7.9
+      },
+      "slope": {
+        "value": 2.482,
+        "percentile": 96.7
+      },
+      "dist_drain": {
+        "value": 436.606,
+        "percentile": 29.9
+      },
+      "sink_depth": {
+        "value": 0.0,
+        "percentile": 8.8
+      },
+      "flow_acc": {
+        "value": 46.0,
+        "percentile": 60.1
+      },
+      "surface_height": {
+        "value": 0.355,
+        "percentile": 45.5
+      },
+      "dem": {
+        "value": 221.393,
+        "percentile": 79.4
+      },
+      "nearest_depression": [
+        {
+          "radius_m": 100,
+          "depth_m": 3.41,
+          "d_north_m": -100,
+          "d_east_m": 100
+        },
+        {
+          "radius_m": 300,
+          "depth_m": 4.29,
+          "d_north_m": -250,
+          "d_east_m": -200
+        }
+      ]
+    },
+    "_built_up_profile": {
+      "susceptibility": [
+        0.5924,
+        0.5972,
+        0.5435,
+        0.4329,
+        0.3339
+      ],
+      "term 1-norm(hand)": [
+        0.5659,
+        0.5687,
+        0.5338,
+        0.4594,
+        0.3722
+      ],
+      "term norm(twi)": [
+        0.6049,
+        0.5597,
+        0.5089,
+        0.4465,
+        0.3801
+      ],
+      "term 1-norm(slope)": [
+        0.5276,
+        0.6,
+        0.555,
+        0.4348,
+        0.3825
+      ],
+      "term norm(dist_drain)": [
+        0.5124,
+        0.4983,
+        0.5068,
+        0.4982,
+        0.4843
+      ]
+    }
+  },
+  "passed": false
+}
