@@ -1081,11 +1081,13 @@ def exit_gate(g: Grids, cfg: dict) -> bool:
     print("WARD-LEVEL GATE — the scale the product actually delivers")
     print("=" * 72)
     wards = ward_percentiles(g, cfg)
+    base = baseline_comparison(g, cfg)
 
     (REPORTS / "phase2_gate.json").write_text(json.dumps(
         dict(pass_percentile=need,
              sample_radius_m=rad_cells * g.res100,
              weights=cfg["static_hydro"]["susceptibility_weights"],
+             terrain_only_baseline=base,
              hotspots=[dict(name=n, percentile_cell=round(a, 2),
                             percentile_neighbourhood=round(b, 2), result=f)
                        for n, a, b, f in rows],
@@ -1280,6 +1282,21 @@ def baseline_comparison(g: Grids, cfg: dict) -> dict:
         print(f"  {hp['name']:<16}{po:>12.1f}%{pn:>11.1f}%"
               f"{no:>13.1f}%{nn:>12.1f}%")
     out["ward_level"] = ward_percentiles(g, cfg, index=old, quiet=True)
+    now = ward_percentiles(g, cfg, quiet=True)
+    if out["ward_level"] and now:
+        b = {w["ward"]: w for w in out["ward_level"]["watched"]}
+        a = {w["ward"]: w for w in now["watched"]}
+        print(f"\n  {'ward':<22}{'pctile before':>15}{'pctile after':>14}"
+              f"{'rank before':>13}{'rank after':>12}")
+        for nm in a:
+            if nm not in b:
+                continue
+            print(f"  {nm:<22}{b[nm]['percentile']:>14.1f}%"
+                  f"{a[nm]['percentile']:>13.1f}%"
+                  f"{b[nm]['rank']:>13}{a[nm]['rank']:>12}")
+        print(f"  watched wards >= {sh['hotspot_pass_percentile']:.0f}th "
+              f"percentile: {out['ward_level']['n_watched_pass']} before -> "
+              f"{now['n_watched_pass']} after (of {now['n_watched']})")
     return out
 
 
@@ -1293,21 +1310,26 @@ def ward_percentiles(g: Grids, cfg: dict, index: np.ndarray | None = None,
     100 m cell; they deploy it to a ward. Aggregating first and ranking
     second is therefore not cosmetic — it is the actual decision scale, and
     it averages out both the DSM's per-pixel noise and the fact that a
-    landmark's published lat/lon is only good to a block or two."""
+    landmark's published lat/lon is only good to a block or two.
+
+    `index` overrides the on-disk susceptibility map — used by
+    baseline_comparison() to run the identical aggregation on the old
+    terrain-only weights. `quiet` suppresses the tables for that pass."""
+    say = (lambda *a: None) if quiet else print
     try:
         import geopandas as gpd
     except ImportError:                              # noqa: BLE001
-        print("  !! geopandas unavailable — ward block skipped")
+        say("  !! geopandas unavailable — ward block skipped")
         return {}
 
     src = ROOT / "data" / "raw" / "Delhi_Wards.geojson"
     if not src.exists():
-        print(f"  !! {src} missing — ward block skipped")
+        say(f"  !! {src} missing — ward block skipped")
         return {}
 
     wards = gpd.read_file(src).to_crs(g.crs)
     name_f = cfg["sources"]["ward_polygons"]["name_field"]
-    s = read(STATIC / "susceptibility.tif")
+    s = read(STATIC / "susceptibility.tif") if index is None else index
     imp = read(STATIC / "g100_impervious.tif")
     hand = read(STATIC / "g100_hand.tif")
 
@@ -1317,7 +1339,7 @@ def ward_percentiles(g: Grids, cfg: dict, index: np.ndarray | None = None,
                     out_shape=(g.ny100, g.nx100), transform=g.t100,
                     fill=0, dtype="int32", all_touched=False)
     covered = int((idx > 0).sum())
-    print(f"  {len(wards)} wards rasterised onto the 100 m grid: "
+    say(f"  {len(wards)} wards rasterised onto the 100 m grid: "
           f"{covered:,} cells ({100*covered/idx.size:.1f} % of the AOI)")
 
     recs = []
@@ -1353,32 +1375,32 @@ def ward_percentiles(g: Grids, cfg: dict, index: np.ndarray | None = None,
     top_n = int(cfg["static_hydro"]["ward_report_top_n"])
     need = float(cfg["static_hydro"]["hotspot_pass_percentile"])
 
-    print(f"\n  ward-level susceptibility (mean over the ward's cells), "
+    say(f"\n  ward-level susceptibility (mean over the ward's cells), "
           f"{len(recs)} wards, pass mark {need:.0f}th percentile")
-    print(f"  {'ward':<22}{'rank':>6}{'pctile':>9}{'suscept':>10}"
+    say(f"  {'ward':<22}{'rank':>6}{'pctile':>9}{'suscept':>10}"
           f"{'imperv':>9}{'HAND m':>9}")
-    print("  " + "-" * 65)
+    say("  " + "-" * 65)
     watched = []
     for nm in watch:
         r = by_name.get(nm)
         if r is None:
-            print(f"  {nm:<22}  NOT FOUND in {src.name}")
+            say(f"  {nm:<22}  NOT FOUND in {src.name}")
             continue
         flag = "PASS" if r["percentile"] >= need else "FAIL"
         watched.append(dict(r, result=flag))
-        print(f"  {nm:<22}{r['rank']:>6}{r['percentile']:>8.1f}%"
+        say(f"  {nm:<22}{r['rank']:>6}{r['percentile']:>8.1f}%"
               f"{r['susceptibility']:>10.4f}{r['impervious']:>9.3f}"
               f"{r['hand']:>9.2f}   {flag}")
 
-    print(f"\n  top {top_n} wards by static susceptibility:")
+    say(f"\n  top {top_n} wards by static susceptibility:")
     top = [recs[i] for i in order[:top_n]]
     for r in top:
-        print(f"  {r['rank']:>3}. {r['ward']:<24}{r['percentile']:>7.1f}%"
+        say(f"  {r['rank']:>3}. {r['ward']:<24}{r['percentile']:>7.1f}%"
               f"{r['susceptibility']:>10.4f}{r['impervious']:>9.3f}"
               f"{r['hand']:>9.2f}")
 
     n_pass = sum(1 for r in watched if r["result"] == "PASS")
-    print(f"\n  WARD GATE: {n_pass}/{len(watched)} watched wards at or above "
+    say(f"\n  WARD GATE: {n_pass}/{len(watched)} watched wards at or above "
           f"the {need:.0f}th percentile")
     return dict(n_wards=len(recs), pass_percentile=need,
                 aggregation="mean of 100 m susceptibility within the ward polygon",

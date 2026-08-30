@@ -131,7 +131,7 @@ def road_km(wards: gpd.GeoDataFrame, crs: str) -> pd.Series:
     # records any it could not get. A layer with a hole in central Delhi
     # produces plausible-looking road_km for every ward and warns nobody, so
     # an incomplete layer is treated as NO layer.
-    meta = OSM.parent / "roads.meta.json"
+    meta = OSM / "roads.meta.json"
     if meta.exists():
         import json
         m = json.loads(meta.read_text())

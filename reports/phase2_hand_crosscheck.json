@@ -1,0 +1,23 @@
+{
+  "reference": "s3://glo-30-hand/v1/2021/ (ASF/HydroSAR)",
+  "tiles": [
+    "Copernicus_DSM_COG_10_N28_00_E076_00_HAND.tif",
+    "Copernicus_DSM_COG_10_N28_00_E077_00_HAND.tif"
+  ],
+  "ours_p50_m": 0.805,
+  "ours_p90_m": 8.88,
+  "by_resampling": {
+    "average": {
+      "cells": 586592,
+      "pearson_r": 0.4225,
+      "spearman_r": 0.576,
+      "median_abs_diff_m": 0.562
+    },
+    "min": {
+      "cells": 586592,
+      "pearson_r": 0.3806,
+      "spearman_r": 0.403,
+      "median_abs_diff_m": 0.657
+    }
+  }
+}
