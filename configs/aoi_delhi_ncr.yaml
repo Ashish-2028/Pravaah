@@ -1,0 +1,135 @@
+# PRAVAAH — Area of Interest definition
+#
+# THIS FILE IS PROOF P-4 (portability).
+# A new region = a copy of this file with new values. No code changes.
+# Every script reads region facts from here. NEVER hardcode a coordinate,
+# a threshold, or a date in Python. (Charter rule R7.)
+
+id: delhi_ncr
+name: Delhi NCR
+description: >
+  National Capital Region pilot. Rainfall layer is grid-based and portable;
+  inundation layer needs the per-city terrain + labels defined below.
+
+# ---------------------------------------------------------------- geometry
+bbox:                       # WGS84 degrees
+  west:  76.85
+  east:  77.65
+  south: 28.30
+  north: 28.95
+
+crs:
+  geographic: EPSG:4326     # storage / interchange
+  projected:  EPSG:32643    # UTM 43N — metric ops (distance, area, 100 m grid)
+
+# --------------------------------------------------------------- rain grid
+# 0.1 deg lattice -> 8 lon x 7 lat = 56 points
+rain_lattice:
+  resolution_deg: 0.1
+  lat_start: 28.35
+  lat_count: 7
+  lon_start: 76.90
+  lon_count: 8
+  expected_points: 56
+
+# --------------------------------------------------- inundation grid (100 m)
+inundation_grid:
+  resolution_m: 100
+  # derived in cube/grid.py from bbox + projected CRS; asserted, never assumed
+
+# ------------------------------------------------------------------- time
+time:
+  tz_internal: UTC          # charter R8 — UTC everywhere internally
+  tz_display: Asia/Kolkata  # presentation layer only
+  monsoon_months: [6, 7, 8, 9]
+
+# ------------------------------------------------------------------ splits
+# Charter R5 — by event and year, NEVER random
+splits:
+  train:
+    obs:  ["2018-01-01", "2023-12-31"]
+    nwp:  ["2021-01-01", "2023-12-31"]   # A2 history starts 2021
+  val:    ["2024-01-01", "2024-12-31"]   # isotonic calibration fitted HERE ONLY
+  test:   ["2025-01-01", "2025-12-31"]
+  inundanet_spatial_block_km: 5
+
+# ------------------------------------------------------------- thresholds
+thresholds:
+  # RainCast — nowcast exceedance (mm)
+  nowcast:
+    h1_mm: 15.0             # guaranteed head — enough positives
+    h3_mm: 50.0             # thin positives; ship only if supported
+  # RainFuse — OFFICIAL IMD 24 h categories (mm). Do not invent alternatives.
+  forecast_24h_mm:
+    heavy:            64.5
+    very_heavy:      115.6
+    extremely_heavy: 204.5
+  leads_h: [1, 2, 3, 6]
+  forecast_leads_h: [24]    # extend to [6,12,24,48,72] if time allows
+
+# --------------------------------------------------- fitted, not hardcoded
+# Charter R7: these are SEARCH SPACES. The chosen value is written back by the
+# script that fitted it, together with the score table it was chosen from.
+fitted:
+  stream_threshold_search: [100, 250, 500, 1000, 2500]
+  stream_threshold_chosen: null      # <- written by features/static_hydro.py
+  stream_threshold_score_table: null
+  operating_point_chosen: null       # <- written by models/calibrate.py
+
+# --------------------------------------------------------------- risk bands
+risk_bands:                 # applied to risk_score
+  low:      [0.00, 0.25]
+  watch:    [0.25, 0.50]
+  high:     [0.50, 0.75]
+  critical: [0.75, 1.01]
+
+# ------------------------------------------------------------------- labels
+labels:
+  positive_buffer_m: 200    # fallback 300 if positives too thin
+  negative_min_distance_m: 1000
+  # Locations that MUST appear in the top quintile without being a feature.
+  # Verified present in the DataMeet ward file (290 wards).
+  hotspot_wards: ["MINTO ROAD", "DARYAGANJ", "KAROL BAGH", "OKHLA", "PAHAR GANJ"]
+  # ITO and Zakhira are landmarks, not ward names — they fall inside
+  # DARYAGANJ and KAROL BAGH respectively.
+
+# ------------------------------------------------------------------ events
+# Curated. NEVER a free date picker — every click must demo well.
+events:
+  - id: "2024-06-28"
+    name: "Delhi cloudburst 28 Jun 2024"
+    primary: true
+    window: ["2024-06-27T18:00Z", "2024-06-28T12:00Z"]
+    demo_timestamps: ["0400","0430","0500","0530","0600","0630",
+                      "0700","0730","0800","0830","0900","0930"]
+    notes: "228 mm; IGI airport terminal canopy collapsed."
+  - id: "2023-07-08"
+    name: "Yamuna record flood 8-13 Jul 2023"
+    primary: false
+    window: ["2023-07-08T00:00Z", "2023-07-13T23:00Z"]
+    notes: "Yamuna peaked at 208.66 m; ITO and Rajghat inundated."
+  - id: "2020-07-19"
+    name: "Delhi waterlogging 19 Jul 2020"
+    primary: false
+    window: ["2020-07-19T00:00Z", "2020-07-19T23:00Z"]
+  - id: "2021-09-01"
+    name: "Delhi heavy rain 1 Sep 2021"
+    primary: false
+    window: ["2021-09-01T00:00Z", "2021-09-01T23:00Z"]
+
+# ------------------------------------------------------------------ sources
+sources:
+  ward_polygons:
+    url: "https://raw.githubusercontent.com/datameet/Municipal_Spatial_Data/master/Delhi/Delhi_Wards.geojson"
+    id_field: Ward_No
+    name_field: Ward_Name
+    verified: "2026-08-31 — 290 features, Polygon, bbox lon 76.84..77.35 lat 28.40..28.88"
+  dem_tiles:                # Copernicus GLO-30, s3://copernicus-dem-30m (UNSIGNED)
+    - Copernicus_DSM_COG_10_N28_00_E076_00_DEM
+    - Copernicus_DSM_COG_10_N28_00_E077_00_DEM
+  noaa_isd_stations:
+    safdarjung: "421820"
+    palam:      "421810"
+  nwp_models: [ecmwf_ifs025, gfs_seamless, icon_seamless]
+  imd_cap_rss: "https://cap-sources.s3.amazonaws.com/in-imd-en/rss.xml"
+  radar_sites: [delhi, chennai]

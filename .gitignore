@@ -1,0 +1,45 @@
+# ---- secrets (NEVER commit) -------------------------------------------
+.env
+*.key
+*-service-account*.json
+.earthengine/
+
+# ---- large data (regenerable; NEVER commit) ---------------------------
+data/raw/
+data/static/
+data/labels/
+*.zarr/
+*.nc
+*.tif
+*.tiff
+*.grib
+*.grib2
+cube/*.zarr/
+
+# ---- python -----------------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# ---- node / frontend --------------------------------------------------
+node_modules/
+ui/dist/
+ui/.vite/
+npm-debug.log*
+
+# ---- os ---------------------------------------------------------------
+.DS_Store
+
+# =======================================================================
+# DELIBERATELY TRACKED (the demo runs on these — see PRAVAAH.md §9.1):
+#   data/outputs/     models/*.pkl     reports/     .env.example
+# =======================================================================
+!data/outputs/
+!models/*.pkl
+!reports/
+!.env.example

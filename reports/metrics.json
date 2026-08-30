@@ -1,0 +1,130 @@
+{
+  "reliability": {
+    "raincast_15mm": [
+      {
+        "bin_center": 0.05,
+        "predicted": 0.05,
+        "observed": 0.095,
+        "count": 200
+      },
+      {
+        "bin_center": 0.15,
+        "predicted": 0.15,
+        "observed": 0.185,
+        "count": 200
+      },
+      {
+        "bin_center": 0.25,
+        "predicted": 0.25,
+        "observed": 0.275,
+        "count": 200
+      },
+      {
+        "bin_center": 0.35,
+        "predicted": 0.35,
+        "observed": 0.365,
+        "count": 200
+      },
+      {
+        "bin_center": 0.45,
+        "predicted": 0.45,
+        "observed": 0.455,
+        "count": 200
+      },
+      {
+        "bin_center": 0.55,
+        "predicted": 0.55,
+        "observed": 0.545,
+        "count": 200
+      },
+      {
+        "bin_center": 0.65,
+        "predicted": 0.65,
+        "observed": 0.635,
+        "count": 200
+      },
+      {
+        "bin_center": 0.75,
+        "predicted": 0.75,
+        "observed": 0.725,
+        "count": 200
+      },
+      {
+        "bin_center": 0.85,
+        "predicted": 0.85,
+        "observed": 0.815,
+        "count": 200
+      },
+      {
+        "bin_center": 0.95,
+        "predicted": 0.95,
+        "observed": 0.905,
+        "count": 200
+      }
+    ]
+  },
+  "ablation": [
+    {
+      "config": "[FAKE] all sources",
+      "csi": 0.41,
+      "pod": 0.62,
+      "far": 0.38,
+      "brier": 0.081
+    },
+    {
+      "config": "[FAKE] no satellite",
+      "csi": 0.35,
+      "pod": 0.54,
+      "far": 0.43,
+      "brier": 0.094
+    },
+    {
+      "config": "[FAKE] no NWP",
+      "csi": 0.33,
+      "pod": 0.51,
+      "far": 0.45,
+      "brier": 0.099
+    },
+    {
+      "config": "[FAKE] raw ECMWF",
+      "csi": 0.27,
+      "pod": 0.44,
+      "far": 0.52,
+      "brier": 0.118
+    }
+  ],
+  "skill_vs_lead": [
+    {
+      "lead_h": 1,
+      "csi": 0.416,
+      "model": "RainCast"
+    },
+    {
+      "lead_h": 2,
+      "csi": 0.333,
+      "model": "RainCast"
+    },
+    {
+      "lead_h": 3,
+      "csi": 0.267,
+      "model": "RainCast"
+    },
+    {
+      "lead_h": 6,
+      "csi": 0.137,
+      "model": "RainCast"
+    }
+  ],
+  "leadtime_vs_cap": [
+    {
+      "event": "2024-06-28",
+      "pravaah_crossing_utc": "2024-06-28T00:30Z",
+      "imd_cap_sent_utc": "2024-06-28T01:45Z",
+      "minutes_gained": 75.0,
+      "matched_far": 0.38
+    }
+  ],
+  "notes": {
+    "status": "FAKE PLACEHOLDER \u2014 replaced in Phase 13"
+  }
+}
