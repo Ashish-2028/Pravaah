@@ -1,0 +1,127 @@
+{
+  "results": [
+    {
+      "category": "heavy",
+      "threshold_mm": 64.5,
+      "lead": "24h",
+      "test_positives": 4066,
+      "operating_point": 0.1,
+      "model": {
+        "hits": 813.0,
+        "misses": 3253.0,
+        "false_alarms": 4979.0,
+        "POD": 0.1999508116084604,
+        "FAR": 0.8596339779005525,
+        "CSI": 0.08988391376451078,
+        "brier": 0.01118,
+        "auc_pr": 0.0969
+      },
+      "raw_nwp": {
+        "hits": 467.0,
+        "misses": 3599.0,
+        "false_alarms": 1794.0,
+        "POD": 0.11485489424495819,
+        "FAR": 0.793454223794781,
+        "CSI": 0.07969283276450512,
+        "brier_proxy": 0.0401
+      },
+      "beats_raw_csi": true,
+      "beats_raw_brier": true
+    },
+    {
+      "category": "very_heavy",
+      "threshold_mm": 115.6,
+      "lead": "24h",
+      "test_positives": 834,
+      "operating_point": 0.06,
+      "model": {
+        "hits": 34.0,
+        "misses": 800.0,
+        "false_alarms": 753.0,
+        "POD": 0.0407673860911271,
+        "FAR": 0.9567979669631512,
+        "CSI": 0.02142407057340895,
+        "brier": 0.00245,
+        "auc_pr": 0.0102
+      },
+      "raw_nwp": {
+        "hits": 46.0,
+        "misses": 788.0,
+        "false_alarms": 346.0,
+        "POD": 0.05515587529976019,
+        "FAR": 0.8826530612244898,
+        "CSI": 0.03898305084745763,
+        "brier_proxy": 0.01462
+      },
+      "beats_raw_csi": false,
+      "beats_raw_brier": true
+    }
+  ],
+  "reliability": {
+    "rainfuse_heavy": [
+      {
+        "bin_center": 0.05,
+        "predicted": 0.0095,
+        "observed": 0.0097,
+        "count": 334954
+      },
+      {
+        "bin_center": 0.15,
+        "predicted": 0.1453,
+        "observed": 0.1317,
+        "count": 5163
+      },
+      {
+        "bin_center": 0.25,
+        "predicted": 0.2933,
+        "observed": 0.2126,
+        "count": 621
+      }
+    ],
+    "rainfuse_very_heavy": [
+      {
+        "bin_center": 0.05,
+        "predicted": 0.0025,
+        "observed": 0.0024,
+        "count": 340457
+      },
+      {
+        "bin_center": 0.15,
+        "predicted": 0.1243,
+        "observed": 0.0165,
+        "count": 243
+      },
+      {
+        "bin_center": 0.25,
+        "predicted": 0.2487,
+        "observed": 0.0,
+        "count": 46
+      }
+    ]
+  },
+  "skill_vs_lead": [
+    {
+      "lead_h": 24,
+      "csi": 0.0899,
+      "model": "RainFuse heavy"
+    },
+    {
+      "lead_h": 24,
+      "csi": 0.0797,
+      "model": "raw NWP heavy"
+    },
+    {
+      "lead_h": 24,
+      "csi": 0.0214,
+      "model": "RainFuse very_heavy"
+    },
+    {
+      "lead_h": 24,
+      "csi": 0.039,
+      "model": "raw NWP very_heavy"
+    }
+  ],
+  "domain": "NW India 70-84E 21-33N, 2,793 IMD cells",
+  "truth": "IMD official gridded 0.25 deg (gauge-based)",
+  "note": "Trained on the wide domain because the Delhi NCR box contains only 6 IMD cells (37/2/0 positives). Rainfall is grid-based and region-agnostic; this is what makes the portability claim real."
+}
