@@ -1,0 +1,14 @@
+{
+  "question": "Does 30-min IMERG satellite rainfall improve the 0-6 h nowcast?",
+  "setup": "24 IMERG features added to the identical model and split: hourly mean/max, intra-hour half-frame trend, lags 1/2/3/6 h, accumulations 3/6/24 h, and 8-neighbour advection + drift gradients computed on the 30-min field. 85.7% train coverage, 976 monsoon days, 2018-2025.",
+  "result": {
+    "mean_csi_era5_only": 0.0728,
+    "mean_csi_with_imerg": 0.0718,
+    "heads_improved": 4,
+    "heads_total": 12
+  },
+  "verdict": "NO. IMERG features do not improve this model and are not shipped.",
+  "why": "The TARGET is ERA5-derived. ERA5-derived features are therefore the natural best predictors of it, and IMERG \u2014 a different instrument measuring the same physical quantity by a different method, with a known low bias on convective peaks (32.9 mm vs the gauge network's 150.7 mm on 28 Jun 2024) \u2014 enters as a noisy proxy for OUR label rather than as new information about it. The four heads that did improve are the ones with the fewest test positives (acc20_w1 has 22), i.e. noise, while the best-populated heads (p5_w6 at 7,793 positives, acc10_w6 at 5,272) got worse.",
+  "what_would_change_it": "Retarget the model onto a gauge-based or IMERG-based truth. The mismatch here is target-vs-predictor provenance, not a defect in IMERG. This is also the strongest argument for the radar-era plan: decoded DWR would be a genuinely independent, higher-resolution observation rather than another satellite estimate of the same field.",
+  "kept_anyway": "The 976-day IMERG archive is retained. It is the second truth source in PRAVAAH.md \u00a75.6, it drives the Nowcast view's animated frames, and it is the natural predictor set the moment the target changes."
+}

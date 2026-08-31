@@ -28,6 +28,7 @@ believable CSI. These are ERA5-scale thresholds and the reports say so.
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -38,7 +39,11 @@ from sklearn.calibration import IsotonicRegression
 from sklearn.metrics import average_precision_score, brier_score_loss
 
 ROOT = Path(__file__).resolve().parent.parent
-TABLE = ROOT / "cube" / "raincast_table.parquet"
+# Use the IMERG-augmented table when it exists. Set PRAVAAH_NO_IMERG=1 to
+# force the ERA5-only table — that is how the two are compared head to head.
+_IM = ROOT / "cube" / "raincast_table_imerg.parquet"
+TABLE = (_IM if (_IM.exists() and not os.getenv("PRAVAAH_NO_IMERG"))
+         else ROOT / "cube" / "raincast_table.parquet")
 REPORTS = ROOT / "reports"
 MODELS = ROOT / "models"
 
@@ -253,13 +258,14 @@ def main() -> int:
     passed = sum(1 for r in results if r["beats_persistence"] and r["beats_raw_nwp"])
     print(f"\n  GATE: {passed}/{len(results)} head-lead combinations beat BOTH baselines")
 
-    (REPORTS / "raincast_metrics.json").write_text(json.dumps(
+    tag = "_noimerg" if os.getenv("PRAVAAH_NO_IMERG") else ""
+    (REPORTS / f"raincast_metrics{tag}.json").write_text(json.dumps(
         {"results": results, "reliability": reliab, "skill_vs_lead": skill,
          "note": ("ERA5-scale thresholds. ERA5 smooths convective extremes, so "
                   "5 mm/h here corresponds to substantially higher point rainfall. "
                   "Charter's 15 mm/h head had only 63 test positives and was dropped.")},
         indent=2))
-    print(f"  -> reports/raincast_metrics.json")
+    print(f"  -> reports/raincast_metrics{tag}.json   (table: {TABLE.name})")
     return 0
 
 
