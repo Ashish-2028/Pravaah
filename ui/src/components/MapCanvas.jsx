@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Map as MapLibreMap, NavigationControl } from 'maplibre-gl'
 import { BAND_COLOR, compact, pct } from '../lib/format'
+import { TOGGLES, getPrefs, loadAll, loadedCount, peek, setPref } from '../lib/basemap'
 
 // DO NOT call setWorkerUrl() here. It was tried and it silently breaks the map.
 //

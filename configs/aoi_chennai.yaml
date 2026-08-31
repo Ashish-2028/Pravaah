@@ -1,0 +1,174 @@
+# PRAVAAH — SECOND REGION (Proof P-4).
+#
+# This file IS the portability claim. It was derived mechanically from
+# aoi_delhi_ncr.yaml by changing region facts only: bounding box, UTM
+# zone, lattice origin, monsoon months (NE not SW), DEM tiles and the
+# event catalogue. No Python changed.
+#
+# HONEST SCOPE: this demonstrates that the PIPELINE is region-agnostic.
+# It does NOT mean Chennai is trained — the inundation layer needs per-
+# city terrain processing and a curated label set, which is exactly the
+# 'hours, not years' work the pitch describes. Saying otherwise would be
+# claiming a trained model we do not have.
+
+id: chennai
+name: Chennai
+description: Second region, to demonstrate portability (Proof P-4). Rainfall is grid-based
+  and region-agnostic; only the inundation layer needs per-city terrain and labels,
+  and that is a one-time automated geoprocessing job from this file.
+bbox:
+  west: 80.0
+  east: 80.35
+  south: 12.83
+  north: 13.25
+crs:
+  geographic: EPSG:4326
+  projected: EPSG:32644
+rain_lattice:
+  resolution_deg: 0.1
+  lat_start: 12.85
+  lat_count: 4
+  lon_start: 80.05
+  lon_count: 3
+  expected_points: 12
+inundation_grid:
+  resolution_m: 100
+time:
+  tz_internal: UTC
+  tz_display: Asia/Kolkata
+  monsoon_months:
+  - 10
+  - 11
+  - 12
+splits:
+  train:
+    obs:
+    - '2018-01-01'
+    - '2023-12-31'
+    nwp:
+    - '2021-01-01'
+    - '2023-12-31'
+  val:
+  - '2024-01-01'
+  - '2024-12-31'
+  test:
+  - '2025-01-01'
+  - '2025-12-31'
+  inundanet_spatial_block_km: 5
+thresholds:
+  nowcast:
+    h1_mm: 15.0
+    h3_mm: 50.0
+  forecast_24h_mm:
+    heavy: 64.5
+    very_heavy: 115.6
+    extremely_heavy: 204.5
+  leads_h:
+  - 1
+  - 2
+  - 3
+  - 6
+  forecast_leads_h:
+  - 24
+fitted:
+  stream_threshold_search:
+  - 100
+  - 250
+  - 500
+  - 1000
+  - 2500
+  stream_threshold_chosen: null
+  stream_threshold_score_table: null
+  operating_point_chosen: null
+static_hydro:
+  hydro_resolution_m: 25
+  bare_earth_opening_m: 175
+  stream_match_tolerance_m: 150
+  drain_waterway_values:
+  - drain
+  - canal
+  - river
+  - stream
+  - ditch
+  drainage_density_window_m: 1000
+  worldcover_built_up_class: 50
+  susceptibility_weights:
+    hand: 0.3
+    twi: 0.2
+    slope: 0.15
+    dist_drain: 0.1
+    impervious: 0.25
+  susceptibility_weights_terrain_only_baseline:
+    hand: 0.4
+    twi: 0.25
+    slope: 0.2
+    dist_drain: 0.15
+  ward_report_names:
+  - MINTO ROAD
+  - DARYAGANJ
+  - KAROL BAGH
+  - PAHAR GANJ
+  - JAMA MASJID
+  - TURKMAN GATE
+  ward_report_top_n: 12
+  hotspot_checkpoints: []
+  hotspot_pass_percentile: 80.0
+  hotspot_sample_radius_m: 300
+risk_bands:
+  low:
+  - 0.0
+  - 0.25
+  watch:
+  - 0.25
+  - 0.5
+  high:
+  - 0.5
+  - 0.75
+  critical:
+  - 0.75
+  - 1.01
+labels:
+  positive_buffer_m: 200
+  negative_min_distance_m: 1000
+  hotspot_wards: []
+  note: labels are per-city and not yet curated for Chennai
+events:
+- id: '2023-12-04'
+  name: Cyclone Michaung, 4 Dec 2023
+  primary: true
+  window:
+  - 2023-12-03T00:00Z
+  - 2023-12-05T23:00Z
+  notes: Chennai recorded ~400 mm in 24 h; widespread inundation.
+sources:
+  ward_polygons:
+    url: https://raw.githubusercontent.com/datameet/Municipal_Spatial_Data/master/Chennai/Chennai_Wards.geojson
+    id_field: Ward_No
+    name_field: Ward_Name
+    verified: NOT yet fetched — this config is the portability artefact, not a trained
+      region
+  dem_tiles:
+  - Copernicus_DSM_COG_10_N12_00_E080_00_DEM
+  - Copernicus_DSM_COG_10_N13_00_E080_00_DEM
+  landcover:
+    worldcover:
+      bucket: esa-worldcover
+      prefix: v200/2021/map/
+      tiling_deg: 3
+      built_up_class: 50
+      verified: 2026-08-31 — AOI needs 1 tile N27E075 (75-78E, 27-30N); COG, 36000x36000
+        @ 8.333e-05 deg; legend tag confirms 50 = Built-up
+    ghsl:
+      url_base: https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_BUILT_S_GLOBE_R2023A/GHS_BUILT_S_E2020_GLOBE_R2023A_54009_100/V1-0/tiles/
+      product: GHS_BUILT_S_E2020_GLOBE_R2023A_54009_100_V1_0
+      units: m2 built-up surface per 100x100 m cell (0..10000)
+      verified: 2026-08-31 — AOI falls entirely in Mollweide tile R6_C26, 29.0 MB
+        zip, bounds x 6959000..7959000 y 3000000..4000000
+  nwp_models:
+  - ecmwf_ifs025
+  - gfs_seamless
+  - icon_seamless
+  imd_cap_rss: https://cap-sources.s3.amazonaws.com/in-imd-en/rss.xml
+  radar_sites:
+  - delhi
+  - chennai

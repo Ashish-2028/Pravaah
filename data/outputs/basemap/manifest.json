@@ -1,0 +1,30 @@
+{
+  "hospitals": {
+    "file": "/static/basemap/hospitals.geojson",
+    "kb": 297
+  },
+  "pumps": {
+    "file": "/static/basemap/pumps.geojson",
+    "kb": 61
+  },
+  "roads_major": {
+    "file": "/static/basemap/roads_major.geojson",
+    "kb": 1269
+  },
+  "roads_secondary": {
+    "file": "/static/basemap/roads_secondary.geojson",
+    "kb": 3647
+  },
+  "schools": {
+    "file": "/static/basemap/schools.geojson",
+    "kb": 278
+  },
+  "underpasses": {
+    "file": "/static/basemap/underpasses.geojson",
+    "kb": 316
+  },
+  "waterways": {
+    "file": "/static/basemap/waterways.geojson",
+    "kb": 486
+  }
+}

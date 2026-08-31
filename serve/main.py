@@ -192,11 +192,21 @@ def post_advisory(ward_id: str, event: str, t: str | None = Query(None)) -> dict
     )
     if match is None:
         raise HTTPException(status_code=404, detail=f"unknown ward: {ward_id}")
-    return {
-        "narration_available": False,
-        "note": "narration unavailable — showing model numbers only",
-        "properties": match["properties"],
-    }
+
+    # Cache miss. Generate on the spot — serve.advisory falls back to a
+    # deterministic bilingual renderer that needs no key and no network, so this
+    # path cannot fail and cannot invent a number (see serve/advisory.py).
+    try:
+        from serve.advisory import generate
+        adv = generate(match["properties"], event)
+        adv["cached"] = False
+        return adv
+    except Exception as exc:  # noqa: BLE001 — narration never breaks the endpoint
+        return {
+            "narration_available": False,
+            "note": f"narration unavailable ({type(exc).__name__}) — model numbers only",
+            "properties": match["properties"],
+        }
 
 
 @app.get("/api/verify/metrics")
