@@ -45,6 +45,51 @@ import { LAYER_COUNT, TOGGLES, getPrefs, loadAll, loadedCount, setPref } from '.
 // After that the poll below sets `ready` and every effect in this file
 // replays normally. Verify with map.queryRenderedFeatures({layers:[...]})
 // rather than screenshots — an agent pane can render a stale frame.
+//
+// TWO CAVEATS ON THAT KICK, both of which have cost time:
+//   * Kick ONCE, on a fresh load. setStyle() wipes all sources and layers, and
+//     the effects below only re-add them when `ready` goes false -> true. A
+//     second kick mid-session leaves `ready` stuck true and you get a loaded
+//     style with NO layers at all — which looks exactly like the bug you were
+//     chasing.
+//   * queryRenderedFeatures() returns 0 for a layer that DOES NOT EXIST, and
+//     only signals that via an 'error' event this component swallows. Always
+//     check map.getLayer(id) alongside the count, or 0 is ambiguous.
+//
+// ---------------------------------------------------------------------------
+// "bm-roads-major RENDERS ZERO FEATURES" — IT IS ALMOST CERTAINLY NOT A BUG.
+//
+// This was investigated at length and the answer is that the layer was right
+// and the viewport was wrong. Reported symptom: at centre [77.221, 28.631]
+// z12.4, bm-roads-secondary rendered 676 features while bm-roads-major
+// rendered 0, from identical machinery and with the source demonstrably loaded
+// (querySourceFeatures returned 595).
+//
+// Root cause: THERE ARE NO MAJOR-TIER ROADS IN THAT VIEWPORT. Measured against
+// the raw GeoJSON with a Liang-Barsky segment-vs-bbox test (not a vertex test
+// — a long segment can cross a box with both endpoints outside it):
+//
+//     viewport 77.200..77.242 / 28.6139..28.6481   major    0   secondary  678
+//     wider Delhi 77.10..77.35 / 28.50..28.75      major 2375   secondary 8430
+//     nearest major-tier road to the viewport centre: 2.45 km away
+//
+// 678 in-bounds vs 676 rendered is a match; the layer paints exactly what is
+// there. That test window is the Lutyens'/Connaught Place area, whose streets
+// OSM classifies secondary/tertiary. build_basemap.py's "major" tier is
+// motorway/trunk/primary + links — Ring Road, NH-48, DND — which are outside
+// it. Move ~2.5 km south to [77.2465, 28.5865] and bm-roads-major renders 214
+// features at the same zoom.
+//
+// THE GENERAL LESSON: this basemap is tiered by OSM highway class, so any
+// single small viewport can legitimately contain one tier and none of another.
+// Before debugging a "layer renders nothing", count what SHOULD be in the
+// current bounds straight from the GeoJSON:
+//
+//     const b = map.getBounds()
+//     const fc = await (await fetch('/static/basemap/roads_major.geojson')).json()
+//     // ...then a real segment-vs-bbox test against b, not a vertex test.
+//
+// If that count is 0, the map is correct and there is nothing to fix.
 
 // A completely local style. No tile server, no sprite, no glyphs — which also
 // means no symbol layers anywhere in this file. Airplane-mode safe by
@@ -401,16 +446,30 @@ function bboxOf(fc) {
  * setData/addSource and the worker finishing its tiling pass. Every mutation
  * in this component is idempotent, so swallow the throw and reapply once the
  * map goes idle. Console stays clean; the paint still lands.
+ *
+ * The catch is silent IN PRODUCTION ONLY. It has to be — the demo is graded on
+ * a clean console — but a silent catch around every map mutation is also a
+ * perfect hiding place for a real bug, and it has already hidden one (an
+ * invalid zoom expression that made addLayer bail with no other symptom than a
+ * layer that never appeared). Under DEV it now reports what it swallowed.
  */
-function safe(map, fn) {
+function safe(map, fn, label = 'map mutation') {
   try {
     fn()
-  } catch {
+  } catch (err) {
+    // "Style is not done loading" is the expected, benign race this wrapper
+    // exists for; anything else is a genuine failure worth seeing.
+    if (import.meta.env.DEV && !/not done loading/i.test(String(err && err.message))) {
+      console.warn(`[map] ${label} threw, retrying on idle:`, err)
+    }
     if (map && !map._removed) {
       map.once('idle', () => {
         try {
           fn()
-        } catch {
+        } catch (err2) {
+          if (import.meta.env.DEV) {
+            console.warn(`[map] ${label} failed again after idle:`, err2)
+          }
           /* the next effect run will reapply it */
         }
       })
@@ -611,7 +670,7 @@ export default function MapCanvas({
           })
         })
         restack(map)
-      })
+      }, `basemap draw: ${name}`)
       setLoaded(loadedCount())
     }
 
@@ -632,7 +691,7 @@ export default function MapCanvas({
           if (map.getLayer(spec.id)) map.setLayoutProperty(spec.id, 'visibility', visibility)
         })
       })
-    })
+    }, 'basemap visibility')
   }, [ready, groups])
 
   // Point identification for the two annotation layers.
