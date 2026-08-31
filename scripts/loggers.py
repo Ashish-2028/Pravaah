@@ -114,6 +114,20 @@ def log_radar() -> str:
             if h in seen:
                 out.append(f"{name}:same")
                 continue
+            # VALIDATE BEFORE ARCHIVING. A truncated response still has a
+            # stable sha, so without this check a corrupt capture gets stored
+            # AND remembered — poisoning the archive permanently and breaking
+            # the publish step later. Verify it decodes as an image first.
+            try:
+                from io import BytesIO
+                from PIL import Image
+                # .load(), NOT .verify(). verify() only checks headers and
+                # happily passes a GIF whose pixel data is truncated — which is
+                # exactly the failure we hit. load() actually decodes.
+                Image.open(BytesIO(r.content)).load()
+            except Exception:  # noqa: BLE001
+                out.append(f"{name}:corrupt")
+                continue
             (d / f"{name}_{_now()}_{h}.gif").write_bytes(r.content)
             _remember("radar", h)
             out.append(f"{name}:NEW")

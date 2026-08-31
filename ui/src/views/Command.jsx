@@ -87,7 +87,8 @@ export default function Command() {
               onSelectWard={selectWard}
               overlay={
                 <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-md border border-grid bg-panel/90 px-2.5 py-1.5 text-[10.5px] text-muted">
-                  Issued {hhmm(t)} UTC · {ranked.length} wards · local GeoJSON, no basemap tiles
+                  Issued {hhmm(t)} UTC · {ranked.length} wards · local vector basemap, no tile
+                  server
                 </div>
               }
             />

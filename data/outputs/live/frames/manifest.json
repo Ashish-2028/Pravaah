@@ -1,0 +1,45 @@
+{
+  "products": {
+    "delhi_caz": {
+      "label": "Constant Altitude Reflectivity",
+      "site": "Delhi DWR (IMD public imagery)",
+      "frames": [
+        {
+          "url": "/static/live/frames/delhi_caz_20260831T162802Z.png",
+          "captured_utc": "2026-08-31T16:28:02+00:00",
+          "stamp": "20260831T162802Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_caz_20260831T164850Z.png",
+          "captured_utc": "2026-08-31T16:48:50+00:00",
+          "stamp": "20260831T164850Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_caz_20260831T170854Z.png",
+          "captured_utc": "2026-08-31T17:08:54+00:00",
+          "stamp": "20260831T170854Z"
+        }
+      ],
+      "n": 3
+    },
+    "delhi_sri": {
+      "label": "Surface Rainfall Intensity",
+      "site": "Delhi DWR (IMD public imagery)",
+      "frames": [
+        {
+          "url": "/static/live/frames/delhi_sri_20260831T162802Z.png",
+          "captured_utc": "2026-08-31T16:28:02+00:00",
+          "stamp": "20260831T162802Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_sri_20260831T165852Z.png",
+          "captured_utc": "2026-08-31T16:58:52+00:00",
+          "stamp": "20260831T165852Z"
+        }
+      ],
+      "n": 2
+    }
+  },
+  "generated": "2026-08-31T17:13:26.422117+00:00",
+  "disclaimer": "IMD public radar imagery, captured live by our logger every 10 minutes and displayed as-is. NOT decoded \u2014 no model consumes these pixels. Decoding raw DWR volumes is the radar-era roadmap item."
+}

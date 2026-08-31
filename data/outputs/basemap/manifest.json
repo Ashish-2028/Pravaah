@@ -26,5 +26,9 @@
   "waterways": {
     "file": "/static/basemap/waterways.geojson",
     "kb": 486
+  },
+  "blackspots": {
+    "file": "/static/basemap/blackspots.geojson",
+    "kb": 36
   }
 }

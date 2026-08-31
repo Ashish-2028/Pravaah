@@ -31,12 +31,15 @@ const BASE = '/static/basemap'
 export const LOAD_ORDER = [
   'waterways',
   'roads_major',
+  'blackspots',
   'underpasses',
   'roads_secondary',
   'hospitals',
   'schools',
   'pumps',
 ]
+
+export const LAYER_COUNT = LOAD_ORDER.length
 
 /** Toggle group -> the files it draws. Defaults follow the brief: the first
  *  view stays clean, so points and underpasses start hidden. */
@@ -45,6 +48,19 @@ export const TOGGLES = [
   { key: 'water', label: 'Water', files: ['waterways'], on: true },
   { key: 'assets', label: 'Assets', files: ['hospitals', 'schools', 'pumps'], on: false },
   { key: 'underpasses', label: 'Underpasses', files: ['underpasses'], on: false },
+  // WORDING IS LOAD-BEARING. These 84 points are the curated label set the
+  // model was TRAINED ON, not something it discovered. Drawn beside the
+  // choropleth with a name like "Predicted" or "Detected" they would read as
+  // model output, which is an overclaim we are not making in front of IMD
+  // judges. The toggle says "labels", the tooltip carries the disclaimer
+  // verbatim, and it defaults OFF.
+  {
+    key: 'blackspots',
+    label: 'Known blackspots (labels)',
+    note: 'curated ground truth — not model output',
+    files: ['blackspots'],
+    on: false,
+  },
 ]
 
 const EMPTY = { type: 'FeatureCollection', features: [] }
