@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-31T16:53:01Z",
+  "generated": "2026-08-31T17:26:22Z",
   "reliability": {
     "raincast_p5_w1": [
       {
@@ -807,6 +807,7 @@
     "P4_portability": {
       "artefact": "configs/aoi_*.yaml",
       "configs": [
+        "aoi_chennai.yaml",
         "aoi_delhi_ncr.yaml"
       ]
     }
