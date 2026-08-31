@@ -95,7 +95,10 @@ def attach_static(df: pd.DataFrame) -> pd.DataFrame:
     ds = xr.open_dataset(STATIC, decode_coords="all")
     keep = [v for v in ("hand", "twi", "slope", "impervious", "built_up",
                         "dist_drain", "drain_density", "plan_curv",
-                        "sink_depth", "acc", "surface_height")
+                        "sink_depth", "acc", "surface_height",
+                        # OSM grade-separation: the closest thing to open
+                        # drainage data that exists (see ingest/osm_underpass.py)
+                        "underpass_dist", "underpass_density", "bridge_dist")
             if v in ds.data_vars]
     print(f"  static layers: {keep}")
 

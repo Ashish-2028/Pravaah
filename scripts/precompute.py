@@ -59,6 +59,9 @@ DRIVER_WORDS = {
     "rain_max": "peak rain intensity",
     "rain_prev3d": "3-day antecedent rain",
     "rain_prev7d": "7-day antecedent rain",
+    "st_underpass_dist": "near an underpass",
+    "st_underpass_density": "many underpasses nearby",
+    "st_bridge_dist": "near a bridge structure",
 }
 
 
@@ -72,7 +75,9 @@ def build_cell_frame(cfg: dict) -> gpd.GeoDataFrame:
     ds = xr.open_dataset(STATIC, decode_coords="all")
     keep = [v for v in ("hand", "twi", "slope", "impervious", "built_up",
                         "dist_drain", "drain_density", "plan_curv",
-                        "sink_depth", "surface_height") if v in ds.data_vars]
+                        "sink_depth", "surface_height",
+                        "underpass_dist", "underpass_density",
+                        "bridge_dist") if v in ds.data_vars]
 
     stack = ds[keep].to_dataframe().reset_index().dropna(subset=keep, how="all")
     stack = stack.rename(columns={f"{v}": f"st_{v}" for v in keep})
