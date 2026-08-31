@@ -1,0 +1,58 @@
+{
+  "event": "2024-06-28",
+  "pravaah_crossing_utc": "2024-06-28T00:00:00Z",
+  "pravaah_max_p_flood": 0.835,
+  "computable": false,
+  "reason": "IMD's public CAP feed carried no Delhi-covering alert in the 3 days before this event. The feed is a sparse, multi-state bulletin cycle, not a city nowcast channel, so its silence is NOT evidence that IMD failed to warn Delhi through other channels. We decline to compute a lead time rather than compare against an unrelated state's alert.",
+  "alerts_examined": [
+    {
+      "sent": "2024-06-22T06:37:45Z",
+      "event": [
+        "Heavy to very heavy rainfall with extremely heavy falls"
+      ],
+      "areas": "Konkan Goa Madhya Maharashtra Karnataka Kerala"
+    },
+    {
+      "sent": "2024-06-24T07:33:09Z",
+      "event": [
+        "Heavy to very heavy rainfall with extremely heavy falls"
+      ],
+      "areas": "Konkan Goa Karnataka Kerala Gujarat"
+    },
+    {
+      "sent": "2024-06-25T07:32:23Z",
+      "event": [
+        "Heavy to very heavy rainfall with extremely heavy falls"
+      ],
+      "areas": "Bihar, Kerala,  Mahe, Gujarat Region, Konkan, Goa,Coastal and South Interior Karnataka, Tamil Nadu, Sub-Himala"
+    },
+    {
+      "sent": "2024-06-26T06:56:37Z",
+      "event": [
+        "Heavy to very heavy rainfall with extremely heavy falls"
+      ],
+      "areas": "Bihar, Kerala,  Mahe, Gujarat Region, Konkan, Goa,Coastal and South Interior Karnataka, Tamil Nadu, Sub-Himala"
+    },
+    {
+      "sent": "2024-06-26T07:01:34Z",
+      "event": [
+        "Heavy to very heavy rainfall"
+      ],
+      "areas": "Bihar, Sub-Himalayan West Bengal"
+    },
+    {
+      "sent": "2024-06-27T07:10:22Z",
+      "event": [
+        "Heavy to very heavy rainfall with extremely heavy falls"
+      ],
+      "areas": "Uttarakhand, Kerala,  Mahe, Konkan, Goa,Coastal and South Interior Karnataka, Gujarat state, East Rajasthan, W"
+    },
+    {
+      "sent": "2024-06-27T07:13:21Z",
+      "event": [
+        "Heavy to very heavy rainfall"
+      ],
+      "areas": "odisha and Coastal Andhra pradesh"
+    }
+  ]
+}

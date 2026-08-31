@@ -1,130 +1,1103 @@
 {
+  "generated": "2026-08-31T16:40:17Z",
   "reliability": {
-    "raincast_15mm": [
+    "raincast_p5_w1": [
       {
         "bin_center": 0.05,
-        "predicted": 0.05,
-        "observed": 0.095,
-        "count": 200
+        "predicted": 0.0059,
+        "observed": 0.0048,
+        "count": 158615
       },
       {
         "bin_center": 0.15,
-        "predicted": 0.15,
-        "observed": 0.185,
-        "count": 200
+        "predicted": 0.1295,
+        "observed": 0.1042,
+        "count": 3530
       },
       {
         "bin_center": 0.25,
-        "predicted": 0.25,
-        "observed": 0.275,
-        "count": 200
+        "predicted": 0.2253,
+        "observed": 0.1445,
+        "count": 775
       },
       {
         "bin_center": 0.35,
-        "predicted": 0.35,
-        "observed": 0.365,
-        "count": 200
-      },
-      {
-        "bin_center": 0.45,
-        "predicted": 0.45,
-        "observed": 0.455,
-        "count": 200
+        "predicted": 0.3264,
+        "observed": 0.2396,
+        "count": 935
       },
       {
         "bin_center": 0.55,
-        "predicted": 0.55,
-        "observed": 0.545,
-        "count": 200
-      },
-      {
-        "bin_center": 0.65,
-        "predicted": 0.65,
-        "observed": 0.635,
-        "count": 200
-      },
-      {
-        "bin_center": 0.75,
-        "predicted": 0.75,
-        "observed": 0.725,
-        "count": 200
+        "predicted": 0.5656,
+        "observed": 0.2286,
+        "count": 35
       },
       {
         "bin_center": 0.85,
-        "predicted": 0.85,
-        "observed": 0.815,
-        "count": 200
+        "predicted": 0.8139,
+        "observed": 0.5303,
+        "count": 66
+      }
+    ],
+    "raincast_p5_w3": [
+      {
+        "bin_center": 0.05,
+        "predicted": 0.0193,
+        "observed": 0.0161,
+        "count": 153069
       },
       {
-        "bin_center": 0.95,
-        "predicted": 0.95,
-        "observed": 0.905,
-        "count": 200
+        "bin_center": 0.15,
+        "predicted": 0.1379,
+        "observed": 0.115,
+        "count": 6835
+      },
+      {
+        "bin_center": 0.25,
+        "predicted": 0.2555,
+        "observed": 0.1964,
+        "count": 2796
+      },
+      {
+        "bin_center": 0.35,
+        "predicted": 0.3771,
+        "observed": 0.1957,
+        "count": 879
+      },
+      {
+        "bin_center": 0.45,
+        "predicted": 0.4308,
+        "observed": 0.3636,
+        "count": 220
+      },
+      {
+        "bin_center": 0.55,
+        "predicted": 0.5705,
+        "observed": 0.3088,
+        "count": 68
+      },
+      {
+        "bin_center": 0.65,
+        "predicted": 0.644,
+        "observed": 0.4062,
+        "count": 32
+      },
+      {
+        "bin_center": 0.85,
+        "predicted": 0.8522,
+        "observed": 0.6923,
+        "count": 65
+      }
+    ],
+    "raincast_p5_w6": [
+      {
+        "bin_center": 0.05,
+        "predicted": 0.0383,
+        "observed": 0.0307,
+        "count": 138251
+      },
+      {
+        "bin_center": 0.15,
+        "predicted": 0.1281,
+        "observed": 0.1083,
+        "count": 17906
+      },
+      {
+        "bin_center": 0.25,
+        "predicted": 0.2498,
+        "observed": 0.1771,
+        "count": 5555
+      },
+      {
+        "bin_center": 0.35,
+        "predicted": 0.355,
+        "observed": 0.2595,
+        "count": 1160
+      },
+      {
+        "bin_center": 0.45,
+        "predicted": 0.4177,
+        "observed": 0.2612,
+        "count": 919
+      },
+      {
+        "bin_center": 0.55,
+        "predicted": 0.5719,
+        "observed": 0.2603,
+        "count": 73
+      },
+      {
+        "bin_center": 0.65,
+        "predicted": 0.6534,
+        "observed": 0.4054,
+        "count": 37
+      },
+      {
+        "bin_center": 0.85,
+        "predicted": 0.825,
+        "observed": 0.7231,
+        "count": 65
+      }
+    ],
+    "raincast_p10_w1": [
+      {
+        "bin_center": 0.05,
+        "predicted": 0.0033,
+        "observed": 0.0016,
+        "count": 163842
+      },
+      {
+        "bin_center": 0.25,
+        "predicted": 0.2907,
+        "observed": 0.0594,
+        "count": 101
+      }
+    ],
+    "raincast_p10_w3": [
+      {
+        "bin_center": 0.05,
+        "predicted": 0.0074,
+        "observed": 0.0045,
+        "count": 163562
+      },
+      {
+        "bin_center": 0.25,
+        "predicted": 0.2593,
+        "observed": 0.1058,
+        "count": 378
+      },
+      {
+        "bin_center": 0.35,
+        "predicted": 0.3659,
+        "observed": 0.2593,
+        "count": 27
+      }
+    ],
+    "raincast_p10_w6": [
+      {
+        "bin_center": 0.05,
+        "predicted": 0.0142,
+        "observed": 0.0088,
+        "count": 161492
+      },
+      {
+        "bin_center": 0.15,
+        "predicted": 0.1609,
+        "observed": 0.0323,
+        "count": 1951
+      },
+      {
+        "bin_center": 0.25,
+        "predicted": 0.2471,
+        "observed": 0.0686,
+        "count": 525
+      }
+    ],
+    "raincast_acc10_w1": [
+      {
+        "bin_center": 0.05,
+        "predicted": 0.0033,
+        "observed": 0.0016,
+        "count": 163842
+      },
+      {
+        "bin_center": 0.25,
+        "predicted": 0.2907,
+        "observed": 0.0594,
+        "count": 101
+      }
+    ],
+    "raincast_acc10_w3": [
+      {
+        "bin_center": 0.05,
+        "predicted": 0.0098,
+        "observed": 0.0067,
+        "count": 154639
+      },
+      {
+        "bin_center": 0.15,
+        "predicted": 0.1461,
+        "observed": 0.0611,
+        "count": 5793
+      },
+      {
+        "bin_center": 0.25,
+        "predicted": 0.2185,
+        "observed": 0.1026,
+        "count": 2650
+      },
+      {
+        "bin_center": 0.35,
+        "predicted": 0.3894,
+        "observed": 0.1841,
+        "count": 820
+      },
+      {
+        "bin_center": 0.55,
+        "predicted": 0.5702,
+        "observed": 0.1458,
+        "count": 48
+      }
+    ],
+    "raincast_acc10_w6": [
+      {
+        "bin_center": 0.05,
+        "predicted": 0.029,
+        "observed": 0.0217,
+        "count": 152497
+      },
+      {
+        "bin_center": 0.15,
+        "predicted": 0.1394,
+        "observed": 0.1028,
+        "count": 6156
+      },
+      {
+        "bin_center": 0.25,
+        "predicted": 0.2484,
+        "observed": 0.2181,
+        "count": 2141
+      },
+      {
+        "bin_center": 0.35,
+        "predicted": 0.3651,
+        "observed": 0.2211,
+        "count": 2384
+      },
+      {
+        "bin_center": 0.45,
+        "predicted": 0.4329,
+        "observed": 0.3419,
+        "count": 117
+      },
+      {
+        "bin_center": 0.55,
+        "predicted": 0.5241,
+        "observed": 0.4132,
+        "count": 167
+      },
+      {
+        "bin_center": 0.65,
+        "predicted": 0.6087,
+        "observed": 0.4286,
+        "count": 98
+      },
+      {
+        "bin_center": 0.75,
+        "predicted": 0.749,
+        "observed": 0.469,
+        "count": 403
+      }
+    ],
+    "raincast_acc20_w1": [
+      {
+        "bin_center": 0.05,
+        "predicted": 0.0006,
+        "observed": 0.0001,
+        "count": 163920
+      },
+      {
+        "bin_center": 0.15,
+        "predicted": 0.175,
+        "observed": 0.1042,
+        "count": 48
+      }
+    ],
+    "raincast_acc20_w3": [
+      {
+        "bin_center": 0.05,
+        "predicted": 0.0047,
+        "observed": 0.001,
+        "count": 163692
+      },
+      {
+        "bin_center": 0.25,
+        "predicted": 0.2282,
+        "observed": 0.0335,
+        "count": 179
+      },
+      {
+        "bin_center": 0.35,
+        "predicted": 0.3916,
+        "observed": 0.2247,
+        "count": 89
+      }
+    ],
+    "raincast_acc20_w6": [
+      {
+        "bin_center": 0.05,
+        "predicted": 0.0114,
+        "observed": 0.0033,
+        "count": 159013
+      },
+      {
+        "bin_center": 0.15,
+        "predicted": 0.1274,
+        "observed": 0.043,
+        "count": 4092
+      },
+      {
+        "bin_center": 0.25,
+        "predicted": 0.2129,
+        "observed": 0.0,
+        "count": 61
+      },
+      {
+        "bin_center": 0.35,
+        "predicted": 0.3081,
+        "observed": 0.0298,
+        "count": 235
+      },
+      {
+        "bin_center": 0.45,
+        "predicted": 0.4394,
+        "observed": 0.0644,
+        "count": 419
+      },
+      {
+        "bin_center": 0.55,
+        "predicted": 0.5801,
+        "observed": 0.0811,
+        "count": 148
+      }
+    ],
+    "rainfuse_heavy": [
+      {
+        "bin_center": 0.05,
+        "predicted": 0.0095,
+        "observed": 0.0097,
+        "count": 334954
+      },
+      {
+        "bin_center": 0.15,
+        "predicted": 0.1453,
+        "observed": 0.1317,
+        "count": 5163
+      },
+      {
+        "bin_center": 0.25,
+        "predicted": 0.2933,
+        "observed": 0.2126,
+        "count": 621
+      }
+    ],
+    "rainfuse_very_heavy": [
+      {
+        "bin_center": 0.05,
+        "predicted": 0.0025,
+        "observed": 0.0024,
+        "count": 340457
+      },
+      {
+        "bin_center": 0.15,
+        "predicted": 0.1243,
+        "observed": 0.0165,
+        "count": 243
+      },
+      {
+        "bin_center": 0.25,
+        "predicted": 0.2487,
+        "observed": 0.0,
+        "count": 46
       }
     ]
   },
   "ablation": [
     {
-      "config": "[FAKE] all sources",
-      "csi": 0.41,
-      "pod": 0.62,
-      "far": 0.38,
-      "brier": 0.081
+      "config": "ALL SOURCES (fusion)",
+      "csi": 0.0977,
+      "pod": 0.2123,
+      "far": 0.8467,
+      "brier": 0.0243
     },
     {
-      "config": "[FAKE] no satellite",
-      "csi": 0.35,
-      "pod": 0.54,
-      "far": 0.43,
-      "brier": 0.094
+      "config": "without advection",
+      "csi": 0.0576,
+      "pod": 0.1286,
+      "far": 0.9056,
+      "brier": 0.02479
     },
     {
-      "config": "[FAKE] no NWP",
-      "csi": 0.33,
-      "pod": 0.51,
-      "far": 0.45,
-      "brier": 0.099
+      "config": "without nwp",
+      "csi": 0.1235,
+      "pod": 0.2667,
+      "far": 0.8129,
+      "brier": 0.02328
     },
     {
-      "config": "[FAKE] raw ECMWF",
-      "csi": 0.27,
-      "pod": 0.44,
-      "far": 0.52,
-      "brier": 0.118
+      "config": "without obs",
+      "csi": 0.107,
+      "pod": 0.222,
+      "far": 0.8287,
+      "brier": 0.02376
+    },
+    {
+      "config": "without static",
+      "csi": 0.1061,
+      "pod": 0.2573,
+      "far": 0.847,
+      "brier": 0.02428
+    },
+    {
+      "config": "without time",
+      "csi": 0.0955,
+      "pod": 0.2207,
+      "far": 0.8559,
+      "brier": 0.02425
+    },
+    {
+      "config": "advection only",
+      "csi": 0.1126,
+      "pod": 0.2464,
+      "far": 0.8283,
+      "brier": 0.02351
+    },
+    {
+      "config": "nwp only",
+      "csi": 0.067,
+      "pod": 0.4802,
+      "far": 0.9277,
+      "brier": 0.02421
+    },
+    {
+      "config": "obs only",
+      "csi": 0.0871,
+      "pod": 0.1584,
+      "far": 0.8377,
+      "brier": 0.02399
+    },
+    {
+      "config": "static only",
+      "csi": 0.0245,
+      "pod": 0.227,
+      "far": 0.9733,
+      "brier": 0.02481
+    },
+    {
+      "config": "time only",
+      "csi": 0.0283,
+      "pod": 0.9006,
+      "far": 0.9716,
+      "brier": 0.025
+    },
+    {
+      "config": "fusion, NWP limited to consistent-coverage cols",
+      "csi": 0.1158,
+      "pod": 0.229,
+      "far": 0.8101,
+      "brier": 0.02384
+    },
+    {
+      "config": "persistence (no ML)",
+      "csi": 0.049,
+      "pod": 0.0638,
+      "far": 0.8259,
+      "brier": null
+    },
+    {
+      "config": "raw GFS (no ML)",
+      "csi": 0.0149,
+      "pod": 0.0164,
+      "far": 0.8648,
+      "brier": null
     }
   ],
   "skill_vs_lead": [
     {
       "lead_h": 1,
-      "csi": 0.416,
-      "model": "RainCast"
+      "csi": 0.1296,
+      "model": "RainCast p5"
     },
     {
-      "lead_h": 2,
-      "csi": 0.333,
-      "model": "RainCast"
+      "lead_h": 1,
+      "csi": 0.068,
+      "model": "persistence p5"
+    },
+    {
+      "lead_h": 1,
+      "csi": 0.009,
+      "model": "raw GFS p5"
     },
     {
       "lead_h": 3,
-      "csi": 0.267,
-      "model": "RainCast"
+      "csi": 0.1205,
+      "model": "RainCast p5"
+    },
+    {
+      "lead_h": 3,
+      "csi": 0.049,
+      "model": "persistence p5"
+    },
+    {
+      "lead_h": 3,
+      "csi": 0.0149,
+      "model": "raw GFS p5"
     },
     {
       "lead_h": 6,
-      "csi": 0.137,
-      "model": "RainCast"
-    }
-  ],
-  "leadtime_vs_cap": [
+      "csi": 0.1182,
+      "model": "RainCast p5"
+    },
     {
-      "event": "2024-06-28",
-      "pravaah_crossing_utc": "2024-06-28T00:30Z",
-      "imd_cap_sent_utc": "2024-06-28T01:45Z",
-      "minutes_gained": 75.0,
-      "matched_far": 0.38
+      "lead_h": 6,
+      "csi": 0.039,
+      "model": "persistence p5"
+    },
+    {
+      "lead_h": 6,
+      "csi": 0.0143,
+      "model": "raw GFS p5"
+    },
+    {
+      "lead_h": 1,
+      "csi": 0.0422,
+      "model": "RainCast p10"
+    },
+    {
+      "lead_h": 1,
+      "csi": 0.0418,
+      "model": "persistence p10"
+    },
+    {
+      "lead_h": 1,
+      "csi": 0.0,
+      "model": "raw GFS p10"
+    },
+    {
+      "lead_h": 3,
+      "csi": 0.0413,
+      "model": "RainCast p10"
+    },
+    {
+      "lead_h": 3,
+      "csi": 0.0224,
+      "model": "persistence p10"
+    },
+    {
+      "lead_h": 3,
+      "csi": 0.0,
+      "model": "raw GFS p10"
+    },
+    {
+      "lead_h": 6,
+      "csi": 0.0254,
+      "model": "RainCast p10"
+    },
+    {
+      "lead_h": 6,
+      "csi": 0.0146,
+      "model": "persistence p10"
+    },
+    {
+      "lead_h": 6,
+      "csi": 0.0,
+      "model": "raw GFS p10"
+    },
+    {
+      "lead_h": 1,
+      "csi": 0.0422,
+      "model": "RainCast acc10"
+    },
+    {
+      "lead_h": 1,
+      "csi": 0.0418,
+      "model": "persistence acc10"
+    },
+    {
+      "lead_h": 1,
+      "csi": 0.0,
+      "model": "raw GFS acc10"
+    },
+    {
+      "lead_h": 3,
+      "csi": 0.0856,
+      "model": "RainCast acc10"
+    },
+    {
+      "lead_h": 3,
+      "csi": 0.0441,
+      "model": "persistence acc10"
+    },
+    {
+      "lead_h": 3,
+      "csi": 0.0417,
+      "model": "raw GFS acc10"
+    },
+    {
+      "lead_h": 6,
+      "csi": 0.1445,
+      "model": "RainCast acc10"
+    },
+    {
+      "lead_h": 6,
+      "csi": 0.0705,
+      "model": "persistence acc10"
+    },
+    {
+      "lead_h": 6,
+      "csi": 0.1012,
+      "model": "raw GFS acc10"
+    },
+    {
+      "lead_h": 1,
+      "csi": 0.0298,
+      "model": "RainCast acc20"
+    },
+    {
+      "lead_h": 1,
+      "csi": 0.0732,
+      "model": "persistence acc20"
+    },
+    {
+      "lead_h": 1,
+      "csi": 0.0,
+      "model": "raw GFS acc20"
+    },
+    {
+      "lead_h": 3,
+      "csi": 0.06,
+      "model": "RainCast acc20"
+    },
+    {
+      "lead_h": 3,
+      "csi": 0.024,
+      "model": "persistence acc20"
+    },
+    {
+      "lead_h": 3,
+      "csi": 0.0168,
+      "model": "raw GFS acc20"
+    },
+    {
+      "lead_h": 6,
+      "csi": 0.0338,
+      "model": "RainCast acc20"
+    },
+    {
+      "lead_h": 6,
+      "csi": 0.0291,
+      "model": "persistence acc20"
+    },
+    {
+      "lead_h": 6,
+      "csi": 0.0428,
+      "model": "raw GFS acc20"
+    },
+    {
+      "lead_h": 24,
+      "csi": 0.0899,
+      "model": "RainFuse heavy"
+    },
+    {
+      "lead_h": 24,
+      "csi": 0.0797,
+      "model": "raw NWP heavy"
+    },
+    {
+      "lead_h": 24,
+      "csi": 0.0214,
+      "model": "RainFuse very_heavy"
+    },
+    {
+      "lead_h": 24,
+      "csi": 0.039,
+      "model": "raw NWP very_heavy"
     }
   ],
-  "notes": {
-    "status": "FAKE PLACEHOLDER \u2014 replaced in Phase 13"
+  "leadtime_vs_cap": [],
+  "proofs": {
+    "P1_fusion": {
+      "artefact": "ablation table",
+      "verdict": "NOT fusion \u2014 'without nwp' scores highest",
+      "head": "y_p5_w3",
+      "test_positives": 4136,
+      "honest_finding": "Leave-one-out shows ADVECTION is the dominant family (-0.040 CSI when removed) and that NWP as available HURTS at 0-6 h (+0.026 CSI when removed). Cause was measured, not guessed: NWP coverage starts at different dates (GFS 2021-03, ICON 2022-11, ECMWF 2024-02), so a column's missingness correlates with year and misleads on a fully-covered test year. Restricting to consistent-coverage columns recovers most of it (0.098 -> 0.116). The deeper reading is the project's own thesis: at 0-6 h, observation-based extrapolation beats global NWP \u2014 which is exactly the nowcast gap PRAVAAH exists to fill, and is consistent with RainFuse, where NWP at 6-72 h IS the signal and we beat it on Brier."
+    },
+    "P2_calibration": {
+      "artefact": "reliability diagrams + isotonic on held-out year",
+      "rainfuse_heavy_brier": 0.01118,
+      "raw_nwp_brier": 0.0401,
+      "heads_with_reliability": [
+        "raincast_p5_w1",
+        "raincast_p5_w3",
+        "raincast_p5_w6",
+        "raincast_p10_w1",
+        "raincast_p10_w3",
+        "raincast_p10_w6",
+        "raincast_acc10_w1",
+        "raincast_acc10_w3",
+        "raincast_acc10_w6",
+        "raincast_acc20_w1",
+        "raincast_acc20_w3",
+        "raincast_acc20_w6",
+        "rainfuse_heavy",
+        "rainfuse_very_heavy"
+      ]
+    },
+    "P3_lead_time": {
+      "cap_comparison": {
+        "event": "2024-06-28",
+        "pravaah_crossing_utc": "2024-06-28T00:00:00Z",
+        "pravaah_max_p_flood": 0.835,
+        "computable": false,
+        "reason": "IMD's public CAP feed carried no Delhi-covering alert in the 3 days before this event. The feed is a sparse, multi-state bulletin cycle, not a city nowcast channel, so its silence is NOT evidence that IMD failed to warn Delhi through other channels. We decline to compute a lead time rather than compare against an unrelated state's alert.",
+        "alerts_examined": [
+          {
+            "sent": "2024-06-22T06:37:45Z",
+            "event": [
+              "Heavy to very heavy rainfall with extremely heavy falls"
+            ],
+            "areas": "Konkan Goa Madhya Maharashtra Karnataka Kerala"
+          },
+          {
+            "sent": "2024-06-24T07:33:09Z",
+            "event": [
+              "Heavy to very heavy rainfall with extremely heavy falls"
+            ],
+            "areas": "Konkan Goa Karnataka Kerala Gujarat"
+          },
+          {
+            "sent": "2024-06-25T07:32:23Z",
+            "event": [
+              "Heavy to very heavy rainfall with extremely heavy falls"
+            ],
+            "areas": "Bihar, Kerala,  Mahe, Gujarat Region, Konkan, Goa,Coastal and South Interior Karnataka, Tamil Nadu, Sub-Himala"
+          },
+          {
+            "sent": "2024-06-26T06:56:37Z",
+            "event": [
+              "Heavy to very heavy rainfall with extremely heavy falls"
+            ],
+            "areas": "Bihar, Kerala,  Mahe, Gujarat Region, Konkan, Goa,Coastal and South Interior Karnataka, Tamil Nadu, Sub-Himala"
+          },
+          {
+            "sent": "2024-06-26T07:01:34Z",
+            "event": [
+              "Heavy to very heavy rainfall"
+            ],
+            "areas": "Bihar, Sub-Himalayan West Bengal"
+          },
+          {
+            "sent": "2024-06-27T07:10:22Z",
+            "event": [
+              "Heavy to very heavy rainfall with extremely heavy falls"
+            ],
+            "areas": "Uttarakhand, Kerala,  Mahe, Konkan, Goa,Coastal and South Interior Karnataka, Gujarat state, East Rajasthan, W"
+          },
+          {
+            "sent": "2024-06-27T07:13:21Z",
+            "event": [
+              "Heavy to very heavy rainfall"
+            ],
+            "areas": "odisha and Coastal Andhra pradesh"
+          }
+        ]
+      },
+      "substitute": {
+        "computable": true,
+        "event": "2024-06-28",
+        "first_observed_exceedance_utc": "2024-06-27 19:00:00+00:00",
+        "raw_gfs_first_crossing_utc": "2024-06-27 12:00:00+00:00",
+        "persistence_first_crossing_utc": "2024-06-27 22:00:00+00:00",
+        "note": "Substitute for the CAP comparison, which is not computable for this event \u2014 see cap_comparison below. Measures how the physics baseline and the persistence baseline timed this event relative to what actually happened.",
+        "gfs_lag_hours_vs_observed": -7.0,
+        "persistence_lag_hours_vs_observed": 3.0
+      }
+    },
+    "P4_portability": {
+      "artefact": "configs/aoi_*.yaml",
+      "configs": [
+        "aoi_delhi_ncr.yaml"
+      ]
+    }
+  },
+  "models": {
+    "raincast": {
+      "heads": [
+        {
+          "head": "p5",
+          "window_h": 1,
+          "csi": 0.12956698240866035,
+          "pod": 0.2526385224274406,
+          "far": 0.7899067471201316,
+          "brier": 0.00846,
+          "persistence_csi": 0.06798168369144064,
+          "raw_nwp_csi": 0.008995502248875561,
+          "test_positives": 1516,
+          "beats_both": true
+        },
+        {
+          "head": "p5",
+          "window_h": 3,
+          "csi": 0.12052473353375238,
+          "pod": 0.21324951644100582,
+          "far": 0.7829724409448819,
+          "brier": 0.02313,
+          "persistence_csi": 0.04899777282850779,
+          "raw_nwp_csi": 0.014876394661999562,
+          "test_positives": 4136,
+          "beats_both": true
+        },
+        {
+          "head": "p5",
+          "window_h": 6,
+          "csi": 0.11816984858459513,
+          "pod": 0.23033491595021172,
+          "far": 0.804721496953873,
+          "brier": 0.04343,
+          "persistence_csi": 0.03895089285714286,
+          "raw_nwp_csi": 0.014304927252720381,
+          "test_positives": 7793,
+          "beats_both": true
+        },
+        {
+          "head": "p10",
+          "window_h": 1,
+          "csi": 0.04223968565815324,
+          "pod": 0.15693430656934307,
+          "far": 0.9453621346886912,
+          "brier": 0.0017,
+          "persistence_csi": 0.04182509505703422,
+          "raw_nwp_csi": 0.0,
+          "test_positives": 274,
+          "beats_both": true
+        },
+        {
+          "head": "p10",
+          "window_h": 3,
+          "csi": 0.04133685136323659,
+          "pod": 0.060411311053984576,
+          "far": 0.8842364532019704,
+          "brier": 0.00475,
+          "persistence_csi": 0.022351797862001945,
+          "raw_nwp_csi": 0.0,
+          "test_positives": 778,
+          "beats_both": true
+        },
+        {
+          "head": "p10",
+          "window_h": 6,
+          "csi": 0.02535211267605634,
+          "pod": 0.06479057591623037,
+          "far": 0.960016155088853,
+          "brier": 0.00959,
+          "persistence_csi": 0.01463963963963964,
+          "raw_nwp_csi": 0.0,
+          "test_positives": 1528,
+          "beats_both": true
+        },
+        {
+          "head": "acc10",
+          "window_h": 1,
+          "csi": 0.04223968565815324,
+          "pod": 0.15693430656934307,
+          "far": 0.9453621346886912,
+          "brier": 0.0017,
+          "persistence_csi": 0.04182509505703422,
+          "raw_nwp_csi": 0.0,
+          "test_positives": 274,
+          "beats_both": true
+        },
+        {
+          "head": "acc10",
+          "window_h": 3,
+          "csi": 0.08564370024704913,
+          "pod": 0.3417305585980285,
+          "far": 0.8974358974358975,
+          "brier": 0.01135,
+          "persistence_csi": 0.04407165197611601,
+          "raw_nwp_csi": 0.041666666666666664,
+          "test_positives": 1826,
+          "beats_both": true
+        },
+        {
+          "head": "acc10",
+          "window_h": 6,
+          "csi": 0.1444577831132453,
+          "pod": 0.2738998482549317,
+          "far": 0.7658884565499352,
+          "brier": 0.02942,
+          "persistence_csi": 0.0705238626000608,
+          "raw_nwp_csi": 0.1011625726607913,
+          "test_positives": 5272,
+          "beats_both": true
+        },
+        {
+          "head": "acc20",
+          "window_h": 1,
+          "csi": 0.02976190476190476,
+          "pod": 0.22727272727272727,
+          "far": 0.9668874172185431,
+          "brier": 0.00014,
+          "persistence_csi": 0.07317073170731707,
+          "raw_nwp_csi": 0.0,
+          "test_positives": 22,
+          "beats_both": false
+        },
+        {
+          "head": "acc20",
+          "window_h": 3,
+          "csi": 0.06004618937644342,
+          "pod": 0.13612565445026178,
+          "far": 0.9029850746268657,
+          "brier": 0.00122,
+          "persistence_csi": 0.024,
+          "raw_nwp_csi": 0.01680672268907563,
+          "test_positives": 191,
+          "beats_both": true
+        },
+        {
+          "head": "acc20",
+          "window_h": 6,
+          "csi": 0.03383458646616541,
+          "pod": 0.09703504043126684,
+          "far": 0.9506172839506173,
+          "brier": 0.00552,
+          "persistence_csi": 0.029106029106029108,
+          "raw_nwp_csi": 0.042836744407425034,
+          "test_positives": 742,
+          "beats_both": false
+        }
+      ],
+      "gate": "10/12 heads beat BOTH baselines",
+      "note": "ERA5-scale thresholds. ERA5 smooths convective extremes, so 5 mm/h here corresponds to substantially higher point rainfall. Charter's 15 mm/h head had only 63 test positives and was dropped."
+    },
+    "rainfuse": {
+      "categories": [
+        {
+          "category": "heavy",
+          "threshold_mm": 64.5,
+          "csi": 0.08988391376451078,
+          "brier": 0.01118,
+          "raw_nwp_csi": 0.07969283276450512,
+          "raw_nwp_brier": 0.0401,
+          "test_positives": 4066
+        },
+        {
+          "category": "very_heavy",
+          "threshold_mm": 115.6,
+          "csi": 0.02142407057340895,
+          "brier": 0.00245,
+          "raw_nwp_csi": 0.03898305084745763,
+          "raw_nwp_brier": 0.01462,
+          "test_positives": 834
+        }
+      ],
+      "domain": "NW India 70-84E 21-33N, 2,793 IMD cells",
+      "truth": "IMD official gridded 0.25 deg (gauge-based)"
+    },
+    "inundanet": {
+      "auc_pr": 0.6108,
+      "roc_auc": 0.9536,
+      "hand_baseline_auc_pr": 0.0623,
+      "lift_over_hand": 9.808,
+      "within_event_roc_auc": 0.9366,
+      "between_event_roc_auc": 0.9725,
+      "matched_negatives": {
+        "n_rows": 61895,
+        "auc_pr": 0.6273,
+        "roc_auc": 0.9183,
+        "why": "Negatives sampled >1 km from positives are systematically less urban (impervious 0.24 vs 0.83), so imperviousness alone scores ROC-AUC 0.867. Re-scoring on imperviousness-matched negatives removes that shortcut; what survives is hydrological skill rather than an urban/rural artifact."
+      },
+      "cv": "GroupKFold 5-fold on 5 km spatial blocks",
+      "honesty_note": "WITHIN-EVENT AUC is the number that matters for the product's ward-ranking claim. Coordinates were excluded as features to prevent memorising the 84 label locations. Two independent measurements (Phase 2 gate, label enrichment 0.94) already showed static terrain does not explain where Delhi floods."
+    }
+  },
+  "stated_limits": [
+    "No ground radar. IMD's raw DWR volumes are gated; we log the public imagery every 10 minutes but do not decode it in v0. Radar is THE nowcasting instrument, so 0-6 h skill is bounded by its absence.",
+    "ERA5-Land smooths convective extremes: 20.9 mm near Safdarjung on 28 Jun 2024 where the gauge recorded 228 mm. RainCast's thresholds are therefore ERA5-scale, and the charter's 15 mm/h head was dropped because it had only 63 test positives.",
+    "IMD gridded is gauge-based and captures the extreme (150.7 mm) but is 0.25 deg \u2014 only 6 cells over the NCR box \u2014 so it is a daily areal truth, not a ward-scale one.",
+    "Flood labels are 84 hand-curated points. Terrain alone does not explain them (top-quintile enrichment 0.94); OSM underpass features are the strongest available proxy for the missing variable, which is storm-sewer capacity.",
+    "IMD's public CAP feed carried no Delhi-covering alert around the demo event, so lead-time-vs-CAP is not computable for it. That is reported as not-computable rather than substituted quietly."
+  ],
+  "phase2_hotspot_gate": {
+    "cell_level": [
+      {
+        "name": "Minto Bridge",
+        "percentile_cell": 99.5,
+        "percentile_neighbourhood": 99.76,
+        "result": "PASS"
+      },
+      {
+        "name": "ITO",
+        "percentile_cell": 14.37,
+        "percentile_neighbourhood": 99.32,
+        "result": "pass*"
+      },
+      {
+        "name": "Zakhira",
+        "percentile_cell": 3.17,
+        "percentile_neighbourhood": 88.35,
+        "result": "pass*"
+      },
+      {
+        "name": "Pul Prahladpur",
+        "percentile_cell": 11.99,
+        "percentile_neighbourhood": 99.93,
+        "result": "pass*"
+      }
+    ],
+    "ward_level_watched": [
+      {
+        "ward": "MINTO ROAD",
+        "cells": 256,
+        "susceptibility": 0.6402,
+        "impervious": 0.731,
+        "hand": 2.39,
+        "percentile": 85.9,
+        "rank": 42,
+        "result": "PASS"
+      },
+      {
+        "ward": "DARYAGANJ",
+        "cells": 514,
+        "susceptibility": 0.403,
+        "impervious": 0.4365,
+        "hand": 3.09,
+        "percentile": 31.4,
+        "rank": 200,
+        "result": "FAIL"
+      },
+      {
+        "ward": "KAROL BAGH",
+        "cells": 226,
+        "susceptibility": 0.5212,
+        "impervious": 0.8622,
+        "hand": 3.47,
+        "percentile": 60.7,
+        "rank": 115,
+        "result": "FAIL"
+      },
+      {
+        "ward": "PAHAR GANJ",
+        "cells": 105,
+        "susceptibility": 0.3773,
+        "impervious": 0.9207,
+        "hand": 7.0,
+        "percentile": 24.1,
+        "rank": 221,
+        "result": "FAIL"
+      },
+      {
+        "ward": "JAMA MASJID",
+        "cells": 79,
+        "susceptibility": 0.2159,
+        "impervious": 0.9221,
+        "hand": 14.88,
+        "percentile": 3.1,
+        "rank": 282,
+        "result": "FAIL"
+      },
+      {
+        "ward": "TURKMAN GATE",
+        "cells": 22,
+        "susceptibility": 0.2702,
+        "impervious": 0.9971,
+        "hand": 14.27,
+        "percentile": 7.6,
+        "rank": 269,
+        "result": "FAIL"
+      }
+    ]
   }
 }

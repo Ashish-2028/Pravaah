@@ -83,13 +83,48 @@ def best_threshold(y: np.ndarray, p: np.ndarray) -> tuple[float, dict]:
     return best_t, best
 
 
+MIN_TRAIN_COVERAGE = 0.80
+
+
 def feature_columns(df: pd.DataFrame) -> list[str]:
-    return [
+    """
+    Features, with TEMPORALLY-INCONSISTENT columns dropped.
+
+    WHY THIS FILTER EXISTS — it came out of the ablation (eval/ablation.py),
+    which found that removing NWP entirely IMPROVED CSI from 0.098 to 0.124.
+    That looked absurd until the cause was measured: NWP coverage starts at
+    different dates (GFS Mar 2021, ICON Nov 2022, ECMWF Feb 2024,
+    previous_dayN Jan 2024), so a column's MISSINGNESS correlates with the
+    year. In TEST 2025 every model is present — a pattern the model never saw
+    in training — so those columns mislead instead of inform.
+
+    Restricting to columns with >=80% coverage in the TRAINING split recovered
+    most of the loss (0.098 -> 0.116). Coverage is computed on TRAIN ONLY, so
+    this decision cannot see the test year.
+
+    The deeper finding is worth stating out loud rather than patching over: at
+    0-6 h lead, observation-based advection beats global NWP (raw GFS CSI
+    0.015). That is precisely the nowcast gap this project exists to fill, and
+    it is consistent with RainFuse, where NWP at 6-72 h IS the signal and we
+    beat it on Brier.
+    """
+    cand = [
         c for c in df.columns
         if not c.startswith(DROP_PREFIX)
         and c not in DROP_EXACT
         and pd.api.types.is_numeric_dtype(df[c])
     ]
+    tr = df[df.split == "train"]
+    keep, dropped = [], []
+    for c in cand:
+        cov = float(tr[c].notna().mean())
+        (keep if cov >= MIN_TRAIN_COVERAGE else dropped).append((c, cov))
+    if dropped:
+        print(f"  dropped {len(dropped)} columns below "
+              f"{MIN_TRAIN_COVERAGE:.0%} train coverage:")
+        for c, cov in sorted(dropped, key=lambda kv: kv[1]):
+            print(f"    {c:<32} {cov:.1%}")
+    return [c for c, _ in keep]
 
 
 def reliability(y: np.ndarray, p: np.ndarray, bins: int = 10) -> list[dict]:
