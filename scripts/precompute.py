@@ -28,6 +28,7 @@ from pathlib import Path
 import geopandas as gpd
 import lightgbm as lgb
 import numpy as np
+from sklearn.isotonic import IsotonicRegression
 import pandas as pd
 import rioxarray  # noqa: F401
 import xarray as xr
@@ -63,6 +64,63 @@ DRIVER_WORDS = {
     "st_underpass_density": "many underpasses nearby",
     "st_bridge_dist": "near a bridge structure",
 }
+
+
+# ---------------------------------------------------------------- RainCast
+def load_raincast():
+    """
+    Load the nowcast heads AND refit their isotonic calibrators.
+
+    The saved boosters are RAW LightGBM — calibration was fitted at eval time
+    and never persisted. Serving raw scores would put uncalibrated numbers on
+    screen while the Verification view advertises calibrated ones, which is
+    exactly the kind of quiet inconsistency this project has been avoiding. So
+    we refit isotonic here on the VAL split only (charter: never on test), the
+    same way models/raincast_v0.py does.
+    """
+    tbl = ROOT / "cube" / "raincast_table.parquet"
+    if not tbl.exists():
+        print("  ! raincast_table missing — rain layer stays observation-derived")
+        return None
+    df = pd.read_parquet(tbl)
+    va = df[df.split == "val"]
+    heads = {}
+    for label, head, ycol in (("p15", "p5_w3", "y_p5_w3"),
+                              ("p50", "p10_w3", "y_p10_w3")):
+        f = MODELS / f"raincast_v0_{head}.txt"
+        if not f.exists():
+            continue
+        b = lgb.Booster(model_file=str(f))
+        feats = b.feature_name()
+        iso = IsotonicRegression(out_of_bounds="clip").fit(
+            b.predict(va[feats]), va[ycol].to_numpy())
+        heads[label] = {"booster": b, "feats": feats, "iso": iso,
+                        "head": head, "threshold_mm": 5.0 if head.startswith("p5") else 10.0}
+        print(f"  RainCast {head}: {len(feats)} features, isotonic refit on VAL")
+    return {"heads": heads, "table": df} if heads else None
+
+
+def load_rainfuse():
+    """RainFuse heads for the 24 h IMD categories, isotonic refit on its own VAL."""
+    tbl = ROOT / "cube" / "rainfuse_table.parquet"
+    if not tbl.exists():
+        print("  ! rainfuse_table missing — forecast block stays a rain ratio")
+        return None
+    df = pd.read_parquet(tbl)
+    va = df[df.split == "val"]
+    cats = {}
+    for name, thr in (("heavy", 64.5), ("very_heavy", 115.6),
+                      ("extremely_heavy", 204.5)):
+        f = MODELS / f"rainfuse_v0_{name}.txt"
+        if not f.exists():
+            continue
+        b = lgb.Booster(model_file=str(f))
+        feats = b.feature_name()
+        iso = IsotonicRegression(out_of_bounds="clip").fit(
+            b.predict(va[feats]), (va.rain_mm > thr).to_numpy().astype(int))
+        cats[str(thr)] = {"booster": b, "feats": feats, "iso": iso, "name": name}
+        print(f"  RainFuse {name} ({thr} mm): {len(feats)} features, isotonic refit")
+    return {"cats": cats, "table": df} if cats else None
 
 
 def load_cfg() -> dict:
@@ -149,6 +207,8 @@ def main() -> int:
     feat_names = booster.feature_name()
     print(f"InundaNet expects {len(feat_names)} features")
 
+    raincast = load_raincast()
+    rainfuse = load_rainfuse()
     cells = build_cell_frame(cfg)
     exp = gpd.read_parquet(EXPOSURE).drop(columns=["geometry"])
     wards_geo = gpd.read_file(ROOT / "data" / "raw" / "Delhi_Wards.geojson")
@@ -245,21 +305,76 @@ def main() -> int:
             json.dumps({"type": "FeatureCollection", "features": feats_out}))
 
         # ---- rain grid from the observed lattice, knowable at t0
-        cellsr = [{"lat": float(r.plat), "lon": float(r.plon),
-                   "p15": round(min(0.99, float(r.rain_max or 0) / 15), 3),
-                   "p50": round(min(0.99, float(r.rain_max or 0) / 50), 3),
-                   "q10": round(float(r.rain_sum or 0) * 0.35, 1),
-                   "q50": round(float(r.rain_sum or 0), 1),
-                   "q90": round(float(r.rain_sum or 0) * 2.1, 1)}
-                  for _, r in rain.iterrows()]
+        # ---- RAIN GRID: real RainCast output, not a ratio of observed rain.
+        # Earlier this file computed p15 as min(0.99, rain_max/15) — a rescaled
+        # OBSERVATION, so the Nowcast view showed a number no model produced.
+        # Now each lattice point is predicted by the trained head, calibrated.
+        cellsr = []
+        rc_rows = 0
+        if raincast is not None:
+            rt = raincast["table"]
+            snap = rt[rt.valid_time == t0]
+            for _, r in snap.iterrows():
+                cell = {"lat": float(r["lat"]), "lon": float(r["lon"])}
+                for label, h in raincast["heads"].items():
+                    x = pd.DataFrame([r[h["feats"]].to_dict()])
+                    cell[label] = round(float(
+                        h["iso"].predict(h["booster"].predict(x))[0]), 3)
+                acc = float(r.get("precip_acc6", 0) or 0)
+                cell["q10"] = round(acc * 0.35, 1)
+                cell["q50"] = round(acc, 1)
+                cell["q90"] = round(acc * 2.1, 1)
+                cellsr.append(cell)
+            rc_rows = len(cellsr)
+        if not cellsr:                       # model unavailable -> observations
+            cellsr = [{"lat": float(r.plat), "lon": float(r.plon),
+                       "p15": round(min(0.99, float(r.rain_max or 0) / 15), 3),
+                       "p50": round(min(0.99, float(r.rain_max or 0) / 50), 3),
+                       "q10": round(float(r.rain_sum or 0) * 0.35, 1),
+                       "q50": round(float(r.rain_sum or 0), 1),
+                       "q90": round(float(r.rain_sum or 0) * 2.1, 1)}
+                      for _, r in rain.iterrows()]
+
+        # ---- FORECAST BLOCK: real RainFuse output on the official IMD categories.
         thr = cfg["thresholds"]["forecast_24h_mm"]
         rmax = float(rain.rain_sum.max()) if len(rain) else 0.0
+        fc_block, fc_src = {}, "observation ratio"
+        if rainfuse is not None:
+            ft = rainfuse["table"]
+            day = pd.Timestamp(ev_id)
+            near = ft[ft.date == day]
+            if len(near):
+                # the IMD cell closest to the AOI centre
+                c_lat = (cfg["bbox"]["south"] + cfg["bbox"]["north"]) / 2
+                c_lon = (cfg["bbox"]["west"] + cfg["bbox"]["east"]) / 2
+                d = (near.lat - c_lat) ** 2 + (near.lon - c_lon) ** 2
+                row = near.loc[d.idxmin()]
+                for key, cat in rainfuse["cats"].items():
+                    x = pd.DataFrame([row[cat["feats"]].to_dict()])
+                    fc_block[key] = round(float(
+                        cat["iso"].predict(cat["booster"].predict(x))[0]), 3)
+                fc_src = "RainFuse-v0 (calibrated)"
+        if not fc_block:
+            fc_block = {str(thr["heavy"]): round(min(0.99, rmax / thr["heavy"]), 2),
+                        str(thr["very_heavy"]): round(min(0.99, rmax / thr["very_heavy"]), 2),
+                        str(thr["extremely_heavy"]): round(min(0.99, rmax / thr["extremely_heavy"]), 2)}
+
         (ev_dir / f"rain_grid_{stamp}.json").write_text(json.dumps({
             "kind": "nowcast", "lead_h": 3, "cells": cellsr,
-            "forecast": {"lead_h": 24, "thresholds": {
-                str(thr["heavy"]): round(min(0.99, rmax / thr["heavy"]), 2),
-                str(thr["very_heavy"]): round(min(0.99, rmax / thr["very_heavy"]), 2),
-                str(thr["extremely_heavy"]): round(min(0.99, rmax / thr["extremely_heavy"]), 2)}}}))
+            "forecast": {"lead_h": 24, "thresholds": fc_block},
+            # PROVENANCE, so the UI can never imply a model produced a number it
+            # did not, and so the head labels are honest: our heads are 5 mm and
+            # 10 mm (ERA5 scale), NOT the 15/50 the field names historically
+            # implied. The frontend should read these, not hardcode "> 15 mm".
+            "provenance": {
+                "nowcast_source": ("RainCast-v0 (calibrated)" if rc_rows
+                                   else "observation ratio — model unavailable"),
+                "forecast_source": fc_src,
+                "head_thresholds_mm": {
+                    lab: h["threshold_mm"] for lab, h in
+                    (raincast["heads"].items() if raincast else [])},
+                "window_h": 3,
+            }}))
 
         crit = sum(1 for f in feats_out if f["properties"]["risk_band"] == "critical")
         high = sum(1 for f in feats_out if f["properties"]["risk_band"] == "high")
@@ -275,7 +390,7 @@ def main() -> int:
             "people_exposed": int(exposed_total),
             "badges": {"sat": "ok", "radar": "degraded",
                        "stations": "degraded", "nwp": "ok"}}))
-        print(f"    {stamp}  wards={len(feats_out):>3}  crit={crit:>2} high={high:>3}  "
+        print(f"    {stamp}  rain_cells={len(cellsr):>3}  wards={len(feats_out):>3}  crit={crit:>2} high={high:>3}  "
               f"p_flood max={agg.p_flood.max():.3f}  exposed={int(exposed_total):,}")
 
     (OUTPUTS / "index.json").write_text(json.dumps({
