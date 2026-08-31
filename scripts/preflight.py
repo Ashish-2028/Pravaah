@@ -122,16 +122,25 @@ def freshness() -> None:
     if not live.exists():
         check("loggers capturing", False, "no live/ directory")
         return
-    for kind, budget_min in (("cap", 60), ("radar", 45),
+    # Budgets are now on POLL age (3x the interval), not content age.
+    for kind, budget_min in (("cap", 45), ("radar", 30),
                              ("openmeteo", 180), ("ecmwf", 800)):
         d = live / kind
         files = [f for f in d.glob("*") if not f.name.startswith("_")] if d.exists() else []
         if not files:
             check(f"logger {kind}", False, "no captures")
             continue
-        age = (time.time() - max(f.stat().st_mtime for f in files)) / 60
-        check(f"logger {kind}", age < budget_min,
-              f"{len(files)} files, newest {age:.0f} min ago")
+        # Liveness = did a POLL succeed recently, not did content change.
+        # These loggers dedupe by hash, so a healthy logger on an unchanged
+        # feed writes nothing; judging by file mtime failed a working CAP
+        # logger because IMD publishes roughly daily.
+        content_age = (time.time() - max(f.stat().st_mtime for f in files)) / 60
+        hb = d / "_lastpoll"
+        poll_age = ((time.time() - hb.stat().st_mtime) / 60
+                    if hb.exists() else content_age)
+        check(f"logger {kind}", poll_age < budget_min,
+              f"{len(files)} files, polled {poll_age:.0f} min ago, "
+              f"newest content {content_age:.0f} min ago")
 
 
 def proofs() -> None:

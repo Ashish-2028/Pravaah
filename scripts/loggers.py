@@ -78,6 +78,22 @@ def _seen(kind: str) -> set[str]:
     return set(f.read_text().split()) if f.exists() else set()
 
 
+def _heartbeat(kind: str) -> None:
+    """
+    Record that a poll SUCCEEDED, separately from whether it saved anything.
+
+    These loggers deduplicate by content hash, so a healthy logger polling a
+    feed that has not changed writes no file at all. Judging liveness by newest
+    file mtime therefore reports a perfectly working CAP logger as dead — IMD
+    publishes bulletins roughly daily, so "no new file in 90 minutes" is the
+    normal case, not a fault. Liveness and freshness are different questions and
+    need different evidence.
+    """
+    d = LOG / kind
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "_lastpoll").write_text(_now())
+
+
 def _remember(kind: str, h: str) -> None:
     f = LOG / kind / "_hashes.txt"
     with f.open("a") as fh:
@@ -90,6 +106,7 @@ def log_cap() -> str:
     d.mkdir(parents=True, exist_ok=True)
     r = requests.get(CAP_RSS, headers=UA, timeout=60)
     r.raise_for_status()
+    _heartbeat("cap")
     h = _sha(r.content)
     if h in _seen("cap"):
         return "cap: unchanged"
@@ -103,6 +120,7 @@ def log_radar() -> str:
     d = LOG / "radar"
     d.mkdir(parents=True, exist_ok=True)
     seen = _seen("radar")
+    _heartbeat("radar")
     out = []
     for name, url in RADAR.items():
         try:
@@ -153,6 +171,7 @@ def log_openmeteo() -> str:
     # the moment the data became available to US (charter R4).
     payload["_pravaah_issue_time"] = datetime.now(timezone.utc).isoformat()
     (d / f"om_{_now()}.json").write_text(json.dumps(payload))
+    _heartbeat("openmeteo")
     return "openmeteo: ok"
 
 
@@ -169,6 +188,7 @@ def log_ecmwf() -> str:
         target = d / f"ifs_{_now()}.grib2"
         c.retrieve(type="fc", param=["tp", "2t"], step=[6, 12, 24],
                    target=str(target))
+        _heartbeat("ecmwf")
         return f"ecmwf: ok ({target.stat().st_size//1024} KB)"
     except Exception as e:  # noqa: BLE001
         return f"ecmwf: {type(e).__name__}"
@@ -190,10 +210,14 @@ def health() -> int:
             ok = False
             continue
         newest = max(files, key=lambda f: f.stat().st_mtime)
-        age_min = (time.time() - newest.stat().st_mtime) / 60
-        warn = age_min > INTERVALS[kind] / 60 * 3
-        print(f"  {kind:<10} {len(files):>5} files   newest {age_min:6.1f} min ago"
-              f"   {'WARN' if warn else 'ok'}")
+        content_age = (time.time() - newest.stat().st_mtime) / 60
+        hb = d / "_lastpoll"
+        poll_age = ((time.time() - hb.stat().st_mtime) / 60
+                    if hb.exists() else content_age)
+        # LIVENESS is the poll heartbeat; content age is informational only.
+        warn = poll_age > INTERVALS[kind] / 60 * 3
+        print(f"  {kind:<10} {len(files):>5} files   polled {poll_age:5.1f} min ago"
+              f"   newest content {content_age:6.1f} min   {'WARN' if warn else 'ok'}")
         ok = ok and not warn
     return 0 if ok else 1
 
