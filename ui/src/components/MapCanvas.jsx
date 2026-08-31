@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Map as MapLibreMap, NavigationControl } from 'maplibre-gl'
 import { BAND_COLOR, compact, pct } from '../lib/format'
-import { TOGGLES, getPrefs, loadAll, loadedCount, setPref } from '../lib/basemap'
+import { LAYER_COUNT, TOGGLES, getPrefs, loadAll, loadedCount, setPref } from '../lib/basemap'
 
 // DO NOT call setWorkerUrl() here. It was tried and it silently breaks the map.
 //
@@ -19,6 +19,32 @@ import { TOGGLES, getPrefs, loadAll, loadedCount, setPref } from '../lib/basemap
 // Diagnostic if this ever regresses:
 //     map.isStyleLoaded()               -> false, forever
 //     map.querySourceFeatures('wards')  -> 0, while /api/wards returns 290
+//
+// ---------------------------------------------------------------------------
+// A SECOND, UNRELATED WAY TO GET A PERMANENTLY BLANK MAP: no animation frames.
+//
+// In a hidden or headless browser pane, document.visibilityState is 'hidden'
+// and requestAnimationFrame NEVER FIRES. MapLibre's whole pipeline is driven
+// off rAF, so the style never loads, nothing tiles, and the canvas stays empty
+// while every other signal looks healthy — same symptom as the worker bug
+// above, completely different cause. Check this BEFORE suspecting the map:
+//
+//     document.visibilityState                      -> 'hidden'
+//     await new Promise(r => requestAnimationFrame(r))   // never resolves
+//
+// SHIMMING rAF IS NOT ENOUGH ON ITS OWN. Map construction schedules the
+// style-load callback inside Style.loadJSON via browser.frame() — i.e. against
+// whatever rAF existed at construction time. If the map was built before the
+// shim, that frame token is already lost and no later frame revives it. You
+// must shim AND then re-enter the pipeline:
+//
+//     window.requestAnimationFrame = (cb) => setTimeout(() => cb(performance.now()), 16)
+//     window.cancelAnimationFrame = (id) => clearTimeout(id)
+//     window.__pravaahMap.setStyle(BLANK_STYLE)   // re-runs loadJSON, now with a live rAF
+//
+// After that the poll below sets `ready` and every effect in this file
+// replays normally. Verify with map.queryRenderedFeatures({layers:[...]})
+// rather than screenshots — an agent pane can render a stale frame.
 
 // A completely local style. No tile server, no sprite, no glyphs — which also
 // means no symbol layers anywhere in this file. Airplane-mode safe by
@@ -217,7 +243,11 @@ const LAYER_SPECS = {
     {
       id: 'bm-blackspots-ring',
       type: 'circle',
-      minzoom: 8.5, // usable at the zoom the demo opens on
+      // No practical zoom gate. 84 points cannot clutter anything, and the
+      // fitted view lands anywhere from z8.2 in a narrow panel to z9.6 in the
+      // full-width one — a z8.5 gate made the landmarks vanish in the first
+      // case. Fade in below the opening zoom instead of gating at it.
+      minzoom: 7,
       paint: {
         // A whisper of fill rather than a true hollow: it keeps the ring
         // legible over a bright choropleth AND makes the marker a reliable
@@ -225,8 +255,8 @@ const LAYER_SPECS = {
         'circle-color': '#e5edf7',
         'circle-opacity': [
           'interpolate', ['linear'], ['zoom'],
-          8.5, 0,
-          9.2, ['match', ['get', 'confidence'], 'high', 0.1, 0.05],
+          7.2, 0,
+          8.2, ['match', ['get', 'confidence'], 'high', 0.1, 0.05],
         ],
         'circle-radius': zoomScaled(
           ['linear'],
@@ -237,22 +267,22 @@ const LAYER_SPECS = {
         'circle-stroke-width': ['match', ['get', 'confidence'], 'high', 1.8, 1],
         'circle-stroke-opacity': [
           'interpolate', ['linear'], ['zoom'],
-          8.5, 0,
-          9.2, ['match', ['get', 'confidence'], 'high', 0.95, 0.5],
+          7.2, 0,
+          8.2, ['match', ['get', 'confidence'], 'high', 0.95, 0.5],
         ],
       },
     },
     {
       id: 'bm-blackspots-pip',
       type: 'circle',
-      minzoom: 8.5,
+      minzoom: 7,
       paint: {
         'circle-color': '#e5edf7',
         'circle-radius': ['match', ['get', 'confidence'], 'high', 1.7, 1.1],
         'circle-opacity': [
           'interpolate', ['linear'], ['zoom'],
-          8.5, 0,
-          9.2, ['match', ['get', 'confidence'], 'high', 0.95, 0.5],
+          7.2, 0,
+          8.2, ['match', ['get', 'confidence'], 'high', 0.95, 0.5],
         ],
       },
     },
@@ -277,6 +307,16 @@ function assetLayer(id, color) {
       'circle-stroke-opacity': ['interpolate', ['linear'], ['zoom'], 10.8, 0, 11.4, 0.9],
     },
   }
+}
+
+/** Swatch colour per toggle — each one is the actual paint colour of the layer
+ *  it switches, so the panel doubles as the legend. */
+const TOGGLE_DOT = {
+  roads: '#546d92',
+  water: '#22648f',
+  assets: '#a78bfa',
+  underpasses: '#f59e0b',
+  blackspots: '#e5edf7',
 }
 
 export const ASSET_LEGEND = [
@@ -776,14 +816,14 @@ export default function MapCanvas({
       )}
 
       {basemap && (
-        <div className="absolute right-3 top-3 z-10 w-[132px] rounded-md border border-grid bg-panel/92 p-1.5">
+        <div className="absolute right-3 top-3 z-10 w-[168px] rounded-md border border-grid bg-panel/92 p-1.5">
           <div className="flex items-center justify-between px-1 pb-1">
             <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted">
               Basemap
             </span>
-            {loaded < 7 && (
+            {loaded < LAYER_COUNT && (
               <span className="tabular text-[9px] text-dim" title="Loading local street layers">
-                {loaded}/7
+                {loaded}/{LAYER_COUNT}
               </span>
             )}
           </div>
@@ -795,25 +835,18 @@ export default function MapCanvas({
                   key={t.key}
                   type="button"
                   onClick={() => toggleGroup(t.key)}
-                  className={`flex items-center gap-1.5 rounded px-1.5 py-1 text-left text-[10.5px] transition-colors ${
+                  title={t.note || undefined}
+                  className={`flex items-start gap-1.5 rounded px-1.5 py-1 text-left text-[10.5px] leading-snug transition-colors ${
                     on ? 'bg-teal/15 font-semibold text-ink' : 'text-muted hover:text-ink'
                   }`}
                 >
                   <span
-                    className="h-1.5 w-1.5 shrink-0 rounded-full"
+                    className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full"
                     style={{
-                      background: on
-                        ? t.key === 'underpasses'
-                          ? '#f59e0b'
-                          : t.key === 'water'
-                            ? '#1d5a80'
-                            : t.key === 'assets'
-                              ? '#a78bfa'
-                              : '#40587a'
-                        : '#334155',
+                      background: on ? TOGGLE_DOT[t.key] || '#40587a' : '#334155',
                     }}
                   />
-                  {t.label}
+                  <span className="min-w-0">{t.label}</span>
                 </button>
               )
             })}
@@ -828,10 +861,47 @@ export default function MapCanvas({
               ))}
             </div>
           )}
+          {/* Stated on the panel, not only in the tooltip: someone reading the
+              map over the presenter's shoulder must not need to hover to learn
+              that these rings are training labels rather than a prediction. */}
+          {groups.blackspots && (
+            <div className="mt-1 border-t border-grid px-1.5 pt-1 text-[9px] leading-snug text-dim">
+              <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full border border-ink align-middle" />
+              84 curated labels · not model output
+            </div>
+          )}
         </div>
       )}
 
-      {tip && (
+      {tip && tip.kind === 'blackspot' && (
+        <div
+          className="pointer-events-none absolute z-30 w-[248px] rounded-md border border-grid bg-panel/96 px-2.5 py-2 shadow-xl"
+          style={{
+            left: Math.min(tip.x + 14, (container.current?.clientWidth || 600) - 260),
+            top: Math.min(Math.max(6, tip.y - 40), (container.current?.clientHeight || 400) - 180),
+          }}
+        >
+          <div className="flex items-start gap-1.5">
+            <span className="mt-1 h-2 w-2 shrink-0 rounded-full border border-ink" />
+            <span className="text-[11.5px] font-semibold leading-snug text-ink">{tip.name}</span>
+          </div>
+          <div className="mt-0.5 text-[9px] uppercase tracking-wider text-muted">
+            {String(tip.source || '').replace(/_/g, ' ')} · {tip.confidence} confidence
+            {tip.pinned ? ' · pinned' : ''}
+          </div>
+          {tip.notes && (
+            <div className="mt-1.5 line-clamp-4 text-[10px] leading-snug text-muted">
+              {tip.notes}
+            </div>
+          )}
+          {/* Verbatim from the feature's `disclaimer` property. */}
+          <div className="mt-1.5 rounded border border-amber/40 bg-amber/10 px-1.5 py-1 text-[9.5px] leading-snug text-amber">
+            {tip.disclaimer}
+          </div>
+        </div>
+      )}
+
+      {tip && tip.kind === 'underpass' && (
         <div
           className="pointer-events-none absolute z-30 max-w-[220px] rounded-md border border-amber/45 bg-panel/96 px-2.5 py-1.5 shadow-xl"
           style={{
