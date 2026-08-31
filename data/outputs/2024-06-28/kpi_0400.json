@@ -1,1 +1,1 @@
-{"rain_now_mm_h": 15.8, "p3h50": 0.3, "city_risk": "WATCH", "time_to_critical_min": 112, "people_exposed": 1374290, "badges": {"sat": "ok", "radar": "ok", "stations": "degraded", "nwp": "ok"}}
+{"rain_now_mm_h": 32.9, "p3h50": 0.66, "city_risk": "HIGH", "time_to_critical_min": null, "people_exposed": 8676103, "badges": {"sat": "ok", "radar": "degraded", "stations": "degraded", "nwp": "ok"}}

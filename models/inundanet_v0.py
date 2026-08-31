@@ -54,7 +54,9 @@ from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.model_selection import GroupKFold
 
 ROOT = Path(__file__).resolve().parent.parent
-LABELS = ROOT / "data" / "labels" / "inunda_labels.parquet"
+LABELS = (ROOT / "data" / "labels" / "inunda_labels_v2.parquet"
+          if (ROOT / "data" / "labels" / "inunda_labels_v2.parquet").exists()
+          else ROOT / "data" / "labels" / "inunda_labels.parquet")
 STATIC = ROOT / "data" / "static" / "static_stack.nc"
 CUBE = ROOT / "cube" / "ncr_cube.parquet"
 REPORTS = ROOT / "reports"
@@ -189,9 +191,19 @@ def main() -> int:
     n_splits = min(5, n_blocks)
     gkf = GroupKFold(n_splits=n_splits)
     oof = np.zeros(len(df))
+    # MONOTONIC CONSTRAINT ON RAIN. Physically, more rain can never make a cell
+    # LESS likely to flood — but the unconstrained model learned a wobbly,
+    # non-monotonic response (p dipped between 50 and 80 mm), which made the
+    # replay show flood risk FALLING as the cloudburst peaked. That is
+    # indefensible on screen regardless of what the CV score says.
+    # +1 forces the response to be non-decreasing in each rain feature; terrain
+    # features stay unconstrained (0) because their effect genuinely can go
+    # either way.
+    mono = [1 if c.startswith("rain") else 0 for c in feats]
     params = dict(objective="binary", learning_rate=0.05, num_leaves=31,
                   feature_fraction=0.8, bagging_fraction=0.8, bagging_freq=1,
-                  min_data_in_leaf=100, verbose=-1)
+                  min_data_in_leaf=100, verbose=-1,
+                  monotone_constraints=mono)
     booster = None
     for k, (tr, va) in enumerate(gkf.split(X, y, groups), 1):
         ds = lgb.Dataset(X.iloc[tr], y[tr], weight=None if w is None else w[tr])

@@ -1,66 +1,66 @@
 {
-  "n_rows": 94545,
+  "n_rows": 120330,
   "n_positive": 8595,
-  "base_rate": 0.09090909090909091,
+  "base_rate": 0.07142857142857142,
   "n_spatial_blocks": 256,
   "cv": "GroupKFold 5-fold on 5 km spatial blocks",
   "model": {
-    "auc_pr": 0.5454,
-    "roc_auc": 0.9325
+    "auc_pr": 0.4984,
+    "roc_auc": 0.9351
   },
   "baseline_hand_only": {
-    "auc_pr": 0.0771,
-    "roc_auc": 0.4012
+    "auc_pr": 0.0623,
+    "roc_auc": 0.424
   },
-  "lift_over_hand": 7.077,
-  "within_event_roc_auc": 0.9326,
+  "lift_over_hand": 8.002,
+  "within_event_roc_auc": 0.9162,
   "matched_negatives": {
-    "n_rows": 38819,
-    "auc_pr": 0.5576,
-    "roc_auc": 0.8291,
+    "n_rows": 61895,
+    "auc_pr": 0.5114,
+    "roc_auc": 0.8819,
     "why": "Negatives sampled >1 km from positives are systematically less urban (impervious 0.24 vs 0.83), so imperviousness alone scores ROC-AUC 0.867. Re-scoring on imperviousness-matched negatives removes that shortcut; what survives is hydrological skill rather than an urban/rural artifact."
   },
-  "between_event_roc_auc": NaN,
+  "between_event_roc_auc": 0.9744,
   "top_features": [
     {
-      "feature": "st_impervious",
-      "gain": 42503.26845359802
+      "feature": "rain_sum",
+      "gain": 36023.66782283783
     },
     {
       "feature": "st_built_up",
-      "gain": 37956.425730228424
+      "gain": 29065.4644947052
     },
     {
       "feature": "st_surface_height",
-      "gain": 20826.73061132431
+      "gain": 22446.05117869377
     },
     {
-      "feature": "st_dist_drain",
-      "gain": 16297.276556968689
-    },
-    {
-      "feature": "st_sink_depth",
-      "gain": 13904.738481521606
+      "feature": "st_impervious",
+      "gain": 20803.115992069244
     },
     {
       "feature": "st_slope",
-      "gain": 11844.576620101929
+      "gain": 15263.171077013016
+    },
+    {
+      "feature": "st_dist_drain",
+      "gain": 15219.690539360046
+    },
+    {
+      "feature": "st_sink_depth",
+      "gain": 14015.153021812439
     },
     {
       "feature": "st_hand",
-      "gain": 10233.137771606445
+      "gain": 10299.630081892014
     },
     {
-      "feature": "rain_max",
-      "gain": 8611.816249370575
+      "feature": "st_drain_density",
+      "gain": 6334.985660076141
     },
     {
       "feature": "st_twi",
-      "gain": 5398.108273506165
-    },
-    {
-      "feature": "rain_prev3d",
-      "gain": 4602.228519439697
+      "gain": 6148.067186355591
     }
   ],
   "honesty_note": "WITHIN-EVENT AUC is the number that matters for the product's ward-ranking claim. Coordinates were excluded as features to prevent memorising the 84 label locations. Two independent measurements (Phase 2 gate, label enrichment 0.94) already showed static terrain does not explain where Delhi floods."

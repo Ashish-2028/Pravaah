@@ -217,8 +217,13 @@ events:
     name: "Delhi cloudburst 28 Jun 2024"
     primary: true
     window: ["2024-06-27T18:00Z", "2024-06-28T12:00Z"]
-    demo_timestamps: ["0400","0430","0500","0530","0600","0630",
-                      "0700","0730","0800","0830","0900","0930"]
+    # UTC. Chosen from the DATA, not invented: the box-max hourly rain runs
+    # 0.6 mm at 00:00Z -> 32.9 mm at 01:00Z (06:30 IST, the cloudburst peak)
+    # -> 26.2 -> 11.9 -> 9.6 -> 4.7 -> 3.2 by 06:00Z. The original 0400-0930Z
+    # window was 09:30-15:00 IST, i.e. AFTER the storm had passed, which is why
+    # the first precompute produced a completely flat replay.
+    demo_timestamps: ["0000","0030","0100","0130","0200","0230","0300",
+                      "0330","0400","0430","0500","0530","0600","0630","0700"]
     notes: "228 mm; IGI airport terminal canopy collapsed."
   - id: "2023-07-08"
     name: "Yamuna record flood 8-13 Jul 2023"
