@@ -1,4 +1,5 @@
 import { CITY_RISK_COLOR, compact, minutes, num, pct, thresholdLabel, thresholdTitle } from '../lib/format'
+import { Prov, modelName } from './Provenance'
 import { ErrorBox, Spinner, Stat } from './ui'
 
 /**
@@ -32,6 +33,7 @@ export default function KpiStrip({ res, provenance = null }) {
         title={thresholdTitle(provenance, 'p50')}
         value={pct(k.p3h50)}
         sub="calibrated exceedance probability"
+        footer={<Prov>{modelName(provenance?.nowcast_source, 'model output')}</Prov>}
         color={k.p3h50 >= 0.6 ? '#ef4444' : k.p3h50 >= 0.3 ? '#f59e0b' : '#14b8a6'}
         accent={k.p3h50}
       />
@@ -53,7 +55,7 @@ export default function KpiStrip({ res, provenance = null }) {
         label="People exposed"
         value={compact(k.people_exposed)}
         sub={`${num(k.people_exposed)} residents`}
-        color="#e5edf7"
+        color="var(--color-ink)"
       />
     </div>
   )

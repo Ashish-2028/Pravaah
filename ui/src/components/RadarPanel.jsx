@@ -20,14 +20,34 @@ function localUrl(url) {
 }
 
 /**
+ * Capture time as the operator reads it.
+ *
+ * The manifest's `stamp` is the raw file token ("20260902T053000Z"), which is
+ * unreadable on a screen someone is watching from across a room. Prefer
+ * captured_utc rendered in IST — the clock everyone in the room is on — and
+ * fall back to the raw stamp only if the timestamp will not parse.
+ */
+function frameTime(f) {
+  const ms = Date.parse(f?.captured_utc)
+  if (Number.isNaN(ms)) return f?.stamp || ''
+  const ist = new Date(ms + 5.5 * 3600 * 1000)
+  const hh = String(ist.getUTCHours()).padStart(2, '0')
+  const mm = String(ist.getUTCMinutes()).padStart(2, '0')
+  return `${hh}:${mm} IST`
+}
+
+/**
  * Live IMD Delhi DWR captures, animated.
  *
- * HONESTY IS THE FEATURE HERE. These are pictures of a radar product. Nothing
- * decodes them, no model consumes them, and no number anywhere else in this UI
- * is derived from them. The manifest carries that statement in its
- * `disclaimer` field and this panel renders it verbatim, on screen, next to
+ * HONESTY IS THE FEATURE HERE. These are pictures of a radar product, shown as
+ * pictures: this panel decodes nothing and no figure elsewhere in this UI is
+ * read off them. The pipeline states the same thing in the manifest's
+ * `disclaimer` field, and that field is rendered VERBATIM, on screen, beside
  * the animation — not in a tooltip, because a judge watching the loop from
- * three metres away has to see it too.
+ * three metres away has to see it too. If the pipeline's wording ever changes,
+ * the caption changes with it; the sentence below is only the fallback for a
+ * manifest that carries no disclaimer at all, and it claims only what this
+ * component itself can vouch for.
  */
 export default function RadarPanel({ className, height = 260 }) {
   const res = useRadarManifest()
@@ -132,10 +152,15 @@ export default function RadarPanel({ className, height = 260 }) {
           </select>
         )}
 
-        <span className="tabular text-[10.5px] text-muted">
+        <span className="tabular text-[10.5px] text-muted" title={manifest?.products?.[product.key]?.site || undefined}>
           {product.label} · frame <span className="text-ink">{at + 1}</span>
           /{frames.length}
-          {frame?.stamp ? <span className="text-teal"> · {frame.stamp}</span> : null}
+          {frame ? (
+            <span className="text-teal" title={frame.captured_utc || frame.stamp || ''}>
+              {' '}
+              · {frameTime(frame)}
+            </span>
+          ) : null}
         </span>
       </div>
 
@@ -146,7 +171,7 @@ export default function RadarPanel({ className, height = 260 }) {
         {frame && !broken ? (
           <img
             src={frame.src}
-            alt={`${product.label} capture ${frame.stamp || frame.captured_utc || ''}`}
+            alt={`${product.label} capture ${frameTime(frame)}`}
             onError={() => setBrokenSrc(frame.src)}
             className="max-h-full max-w-full object-contain"
           />
@@ -163,7 +188,7 @@ export default function RadarPanel({ className, height = 260 }) {
               <button
                 key={f.src}
                 type="button"
-                title={f.stamp || f.captured_utc || `frame ${n + 1}`}
+                title={`${frameTime(f) || `frame ${n + 1}`}${f.captured_utc ? ` — ${f.captured_utc}` : ''}`}
                 onClick={() => {
                   setPlaying(false)
                   setI(n)
@@ -182,7 +207,7 @@ export default function RadarPanel({ className, height = 260 }) {
           say the same thing in our own words rather than saying nothing. */}
       <div className="border-t border-grid px-2.5 py-1.5 text-[9.5px] leading-snug text-amber">
         {manifest?.disclaimer ||
-          'Radar imagery is DISPLAYED, not decoded. No model in this system consumes these frames.'}
+          'IMD public radar imagery, displayed as captured. This panel decodes nothing and no number in this UI is read off these pixels.'}
       </div>
     </div>
   )
