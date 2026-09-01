@@ -17,7 +17,16 @@ returns only data issued <= t. So when the frontend clock sits at 04:30, the
 numbers on screen were computed from what was genuinely knowable at 04:30. The
 backend then filters files by timestamp, and the honesty law holds end to end.
 
-    python scripts/precompute.py
+MULTI-EVENT
+-----------
+Every event in configs/aoi_delhi_ncr.yaml that declares `demo_timestamps` is
+rendered, primary first, each as ONE UTC day at hourly resolution (0000..2300).
+One UTC day is not a stylistic choice: the backend resolves the replay clock by
+lexical string comparison on "HHMM", so an event that crossed midnight would
+sort 2300 after 0100 and the replay law would resolve to the wrong frame.
+
+    python scripts/precompute.py                 # every declared event
+    python scripts/precompute.py 2024-06-28      # just these ids
 """
 from __future__ import annotations
 
@@ -215,16 +224,49 @@ def main() -> int:
 
     cube = Cube.load()
     bands = {k: tuple(v) for k, v in cfg["risk_bands"].items()}
-    event = next(e for e in cfg["events"] if e.get("primary"))
+
+    # EVERY event that declares demo_timestamps is shipped, primary first. The
+    # replay dropdown is the product; one event made it read as a harness for a
+    # single day. Events without demo_timestamps are candidates, not artefacts.
+    events = [e for e in cfg["events"] if e.get("demo_timestamps")]
+    events.sort(key=lambda e: (not e.get("primary"), e["id"]))
+    only = [a for a in sys.argv[1:] if not a.startswith("-")]
+    if only:
+        events = [e for e in events if e["id"] in only]
+    if not events:
+        print("no events with demo_timestamps — nothing to do")
+        return 1
+    print(f"\n{len(events)} event(s): " + ", ".join(e["id"] for e in events))
+
+    index_events = []
+    for event in events:
+        n = render_event(event, cells, exp, wards_geo, cube, booster, feat_names,
+                         raincast, rainfuse, cfg, bands)
+        index_events.append({"id": event["id"], "name": event["name"],
+                             "timestamps": event["demo_timestamps"], "wards": n})
+
+    (OUTPUTS / "index.json").write_text(json.dumps(
+        {"events": index_events, "schema": 3}, indent=2))
+    print(f"\n  -> {len(index_events)} events in {(OUTPUTS / 'index.json').relative_to(ROOT)}"
+          f"  REAL MODEL OUTPUT")
+    return 0
+
+
+def render_event(event, cells, exp, wards_geo, cube, booster, feat_names,
+                 raincast, rainfuse, cfg, bands) -> int:
+    """Write every artefact for one event. Returns the ward count."""
     ev_id, stamps = event["id"], event["demo_timestamps"]
     ev_dir = OUTPUTS / ev_id
     ev_dir.mkdir(parents=True, exist_ok=True)
     (ev_dir / "frames").mkdir(exist_ok=True)
-    print(f"\nEvent {ev_id}: {len(stamps)} timestamps")
+    print(f"\nEvent {ev_id} — {event['name']}: {len(stamps)} timestamps"
+          f" (peak {event.get('peak_hour_utc', '?')}Z)")
 
     # Track each ward's probability history so onset can be computed causally.
+    # Per event: an onset carried over from another day would be a lie.
     history: dict[str, list[tuple[str, float]]] = {}
     op = 0.5
+    feats_out: list[dict] = []
 
     for stamp in stamps:
         t0 = pd.Timestamp(f"{ev_id}T{stamp[:2]}:{stamp[2:]}:00Z")
@@ -393,12 +435,9 @@ def main() -> int:
         print(f"    {stamp}  rain_cells={len(cellsr):>3}  wards={len(feats_out):>3}  crit={crit:>2} high={high:>3}  "
               f"p_flood max={agg.p_flood.max():.3f}  exposed={int(exposed_total):,}")
 
-    (OUTPUTS / "index.json").write_text(json.dumps({
-        "events": [{"id": ev_id, "name": event["name"],
-                    "timestamps": stamps, "wards": len(feats_out)}],
-        "schema": 3}, indent=2))
-    print(f"\n  -> {ev_dir.relative_to(ROOT)}  REAL MODEL OUTPUT")
-    return 0
+    print(f"  -> {ev_dir.relative_to(ROOT)}  {len(stamps)} frames, "
+          f"{len(feats_out)} wards")
+    return len(feats_out)
 
 
 if __name__ == "__main__":

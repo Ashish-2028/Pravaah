@@ -54,6 +54,33 @@ async function request(url, { method = 'GET', cacheable = true } = {}) {
   }
 }
 
+/** Same shape as request(), for endpoints that answer with text (the CAP XML). */
+async function requestText(url) {
+  const key = `TEXT ${url}`
+  if (cache.has(key)) return cache.get(key)
+  if (inflight.has(key)) return inflight.get(key)
+
+  const p = (async () => {
+    let res
+    try {
+      res = await fetch(url, { headers: { Accept: 'application/xml' } })
+    } catch {
+      throw new Error(`Cannot reach the PRAVAAH API (${url}). Is uvicorn running on :8000?`)
+    }
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    const text = await res.text()
+    cache.set(key, text)
+    return text
+  })()
+
+  inflight.set(key, p)
+  try {
+    return await p
+  } finally {
+    inflight.delete(key)
+  }
+}
+
 export const api = {
   events: () => request('/api/events'),
   health: () => request('/api/health', { cacheable: false }),
@@ -65,6 +92,12 @@ export const api = {
   frames: (event, t) => request(`/api/frames${qs({ event, t })}`),
   advisory: (wardId, event, t) =>
     request(`/api/advisory/${wardId}${qs({ event, t })}`, { method: 'POST' }),
+
+  // Alerting layer. Both are plain reads — generating a CAP document transmits
+  // nothing, and status is always "Exercise" (see serve/cap.py).
+  capPreview: (wardId, event, t) => request(`/api/cap/${wardId}/preview${qs({ event, t })}`),
+  capXml: (wardId, event, t) => requestText(`/api/cap/${wardId}${qs({ event, t })}`),
+  capXmlUrl: (wardId, event, t) => `/api/cap/${wardId}${qs({ event, t })}`,
 }
 
 /** Warm the cache for a timestamp so the replay step does not stutter. */

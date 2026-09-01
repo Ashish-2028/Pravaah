@@ -212,32 +212,103 @@ labels:
 
 # ------------------------------------------------------------------ events
 # Curated. NEVER a free date picker — every click must demo well.
+#
+# HOW THESE FOUR WERE CHOSEN (and why the ids are not the headline dates).
+#
+#   1. The IMD-gridded extreme-day catalogue (data/raw/imd_nw_daily.parquet)
+#      ranked the wettest NCR rain-days independently of anything here:
+#        2024-06-28  150.7 mm | 2018-07-27  129.4 mm | 2021-08-21  114.7 mm
+#        2021-09-02  112.9 mm | 2023-07-09  109.2 mm
+#   2. An IMD rain-day is 08:30 IST to 08:30 IST — i.e. 03:00Z to 03:00Z. So the
+#      calendar date on the catalogue is NOT always the UTC day that holds the
+#      storm. For every candidate we measured the hourly box-max profile in the
+#      cube on D-1, D and D+1 and kept the UTC day containing the most of it.
+#      That is the `id`; `imd_rain_day` records what the catalogue called it.
+#   3. `demo_timestamps` is a full UTC day at hourly resolution: 0000..2300.
+#      The backend sorts timestamps LEXICALLY, so an event must never cross
+#      midnight — one UTC day, 24 frames, no exceptions.
+#
+# The hard-won lesson this encodes: the first build shipped 0400-0930Z, which is
+# 09:30-15:00 IST — AFTER the storm — and produced a flat replay. Windows come
+# from the rain profile, never from the calendar.
+#
+# Shipped events must be one UTC day and carry demo_timestamps; scripts/
+# precompute.py renders exactly those.
 events:
   - id: "2024-06-28"
     name: "Delhi cloudburst 28 Jun 2024"
     primary: true
-    window: ["2024-06-27T18:00Z", "2024-06-28T12:00Z"]
-    # UTC. Chosen from the DATA, not invented: the box-max hourly rain runs
-    # 0.6 mm at 00:00Z -> 32.9 mm at 01:00Z (06:30 IST, the cloudburst peak)
-    # -> 26.2 -> 11.9 -> 9.6 -> 4.7 -> 3.2 by 06:00Z. The original 0400-0930Z
-    # window was 09:30-15:00 IST, i.e. AFTER the storm had passed, which is why
-    # the first precompute produced a completely flat replay.
-    demo_timestamps: ["0000","0030","0100","0130","0200","0230","0300",
-                      "0330","0400","0430","0500","0530","0600","0630","0700"]
-    notes: "228 mm; IGI airport terminal canopy collapsed."
+    imd_rain_day: "2024-06-28"
+    imd_rain_mm: 150.7
+    window: ["2024-06-28T00:00Z", "2024-06-28T23:00Z"]
+    # Box-max hourly: 0.6 mm at 00:00Z -> 32.9 mm at 01:00Z (06:30 IST, the
+    # cloudburst peak) -> 26.2 -> 11.9 -> 9.6 -> 4.7 -> 3.2 by 06:00Z, dry from
+    # 16:00Z. The whole storm sits inside this UTC day.
+    peak_hour_utc: "0100"
+    demo_timestamps: ["0000","0100","0200","0300","0400","0500","0600","0700",
+                      "0800","0900","1000","1100","1200","1300","1400","1500",
+                      "1600","1700","1800","1900","2000","2100","2200","2300"]
+    notes: "228 mm at Safdarjung; IGI airport terminal canopy collapsed."
   - id: "2023-07-08"
-    name: "Yamuna record flood 8-13 Jul 2023"
+    name: "Yamuna flood rain 8 Jul 2023"
     primary: false
-    window: ["2023-07-08T00:00Z", "2023-07-13T23:00Z"]
-    notes: "Yamuna peaked at 208.66 m; ITO and Rajghat inundated."
-  - id: "2020-07-19"
-    name: "Delhi waterlogging 19 Jul 2020"
+    imd_rain_day: "2023-07-09"
+    imd_rain_mm: 109.2
+    window: ["2023-07-08T00:00Z", "2023-07-08T23:00Z"]
+    # The rain that filled the Yamuna. The catalogue calls it the 9 Jul rain-day
+    # (08-Jul 03:00Z -> 09-Jul 03:00Z), so the storm lives on UTC 08 Jul: rain in
+    # all 24 hours, peaking 15.7 mm/h at 06:00Z with a second burst at 18:00Z.
+    peak_hour_utc: "0600"
+    demo_timestamps: ["0000","0100","0200","0300","0400","0500","0600","0700",
+                      "0800","0900","1000","1100","1200","1300","1400","1500",
+                      "1600","1700","1800","1900","2000","2100","2200","2300"]
+    notes: "Yamuna went on to peak at 208.66 m on 13 Jul; ITO and Rajghat inundated."
+  - id: "2021-08-21"
+    name: "Delhi heavy rain 21 Aug 2021"
     primary: false
-    window: ["2020-07-19T00:00Z", "2020-07-19T23:00Z"]
-  - id: "2021-09-01"
-    name: "Delhi heavy rain 1 Sep 2021"
+    imd_rain_day: "2021-08-21"
+    imd_rain_mm: 114.7
+    window: ["2021-08-21T00:00Z", "2021-08-21T23:00Z"]
+    # A long-duration soaking rather than a cloudburst: 19 wet hours, box-max
+    # peaking 7.6 mm/h at 01:00Z and holding 6.9 mm/h through 13:00Z. Useful
+    # contrast to the 28 Jun 2024 burst.
+    peak_hour_utc: "0100"
+    demo_timestamps: ["0000","0100","0200","0300","0400","0500","0600","0700",
+                      "0800","0900","1000","1100","1200","1300","1400","1500",
+                      "1600","1700","1800","1900","2000","2100","2200","2300"]
+    notes: "Widespread waterlogging; low intensity, long duration."
+  - id: "2018-07-26"
+    name: "Delhi heavy rain 26 Jul 2018"
     primary: false
-    window: ["2021-09-01T00:00Z", "2021-09-01T23:00Z"]
+    imd_rain_day: "2018-07-27"
+    imd_rain_mm: 129.4
+    window: ["2018-07-26T00:00Z", "2018-07-26T23:00Z"]
+    # Catalogue date is the 27 Jul rain-day (26-Jul 03:00Z -> 27-Jul 03:00Z);
+    # 21 of those 24 hours fall on UTC 26 Jul, which peaks at 26.3 mm/h at
+    # 10:00Z. Predates the A2 NWP history (GFS 2021-03, ICON 2022-11, ECMWF
+    # 2024-02) and the RainFuse table (2021-06 onward), so:
+    #   - InundaNet is unaffected — its 17 features are static terrain plus
+    #     observation-derived rain aggregates, no NWP column among them;
+    #   - the 24 h forecast block falls back to the observation ratio and SAYS
+    #     SO in rain_grid_*.json provenance.forecast_source.
+    peak_hour_utc: "1000"
+    demo_timestamps: ["0000","0100","0200","0300","0400","0500","0600","0700",
+                      "0800","0900","1000","1100","1200","1300","1400","1500",
+                      "1600","1700","1800","1900","2000","2100","2200","2300"]
+    notes: "Pre-NWP era; forecast block is observation-derived and labelled as such."
+
+# Candidates from the same catalogue that were MEASURED AND REJECTED. Kept here
+# because "we looked and it was too thin" is a better answer than silence.
+events_rejected:
+  - id: "2021-09-02"
+    imd_rain_mm: 112.9
+    reason: >
+      Thinnest of the five in the cube by a wide margin. The catalogue's 2 Sep
+      rain-day maps onto UTC 1 Sep, whose box-max 24 h total is 15.2 mm against
+      81.5 mm for 28 Jun 2024, and the hourly peak is 5.9 mm/h. The replay does
+      move (city p_flood 0.50 -> 0.79 -> 0.53) but on rainfall a fifth the size
+      of the other events, so the map would be defending a number the rain does
+      not support. 2021 is represented by 21 Aug instead.
 
 # ------------------------------------------------------------------ sources
 sources:
