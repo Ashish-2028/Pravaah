@@ -8,7 +8,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { Building2, Droplets, GraduationCap, Route, Users } from 'lucide-react'
+import { Building2, Droplets, GraduationCap, Route, ShieldAlert, Users } from 'lucide-react'
 import { api } from '../lib/api'
 import { BAND_COLOR, ci90, hhmm, num, pct } from '../lib/format'
 import { useResource } from '../lib/hooks'
@@ -80,7 +80,7 @@ function AssetRow({ icon: Icon, label, value }) {
   )
 }
 
-export default function WardDetail({ ward, event, t, onAdvisory }) {
+export default function WardDetail({ ward, event, t, onAdvisory, onCap }) {
   const res = useResource(() => api.ward(ward?.ward_id, event, t), [ward?.ward_id, event, t], {
     enabled: Boolean(ward?.ward_id && event && t),
   })
@@ -141,6 +141,15 @@ export default function WardDetail({ ward, event, t, onAdvisory }) {
         >
           Open AI advisory (EN / हिन्दी)
         </button>
+        {onCap && (
+          <button
+            type="button"
+            onClick={() => onCap(ward.ward_id)}
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-md border border-amber/50 bg-amber/15 py-2 text-[12.5px] font-semibold text-amber transition-colors hover:bg-amber/25"
+          >
+            <ShieldAlert size={14} /> Issue CAP alert (Exercise)
+          </button>
+        )}
       </div>
 
       <section className="border-b border-grid">

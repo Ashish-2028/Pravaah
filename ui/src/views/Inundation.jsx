@@ -1,8 +1,9 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import MapCanvas from '../components/MapCanvas'
 import RankedList from '../components/RankedList'
 import WardDetail from '../components/WardDetail'
 import AdvisoryDrawer from '../components/AdvisoryDrawer'
+import CapModal from '../components/CapModal'
 import { ErrorBox, Panel, Spinner } from '../components/ui'
 import { LayerSwitch } from './Command'
 import { findWard, rankWards, useWards } from '../lib/hooks'
@@ -13,6 +14,7 @@ export default function Inundation() {
   const { event, t, layer, setLayer, selectedWard, selectWard, advisoryOpen, openAdvisory, closeAdvisory } =
     useStore()
   const wardsRes = useWards(event, t)
+  const [capOpen, setCapOpen] = useState(false)
 
   const ranked = useMemo(() => rankWards(wardsRes.data), [wardsRes.data])
   const ward = useMemo(() => findWard(wardsRes.data, selectedWard), [wardsRes.data, selectedWard])
@@ -83,7 +85,13 @@ export default function Inundation() {
       </Panel>
 
       <Panel title="Ward detail" bodyClass="min-h-0">
-        <WardDetail ward={ward} event={event} t={t} onAdvisory={openAdvisory} />
+        <WardDetail
+          ward={ward}
+          event={event}
+          t={t}
+          onAdvisory={openAdvisory}
+          onCap={() => setCapOpen(true)}
+        />
       </Panel>
 
       <AdvisoryDrawer
@@ -94,6 +102,7 @@ export default function Inundation() {
         t={t}
         onClose={closeAdvisory}
       />
+      <CapModal open={capOpen} ward={ward} event={event} t={t} onClose={() => setCapOpen(false)} />
     </div>
   )
 }

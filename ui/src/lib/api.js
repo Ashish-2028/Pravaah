@@ -81,8 +81,24 @@ async function requestText(url) {
   }
 }
 
+/**
+ * Drop cached responses whose URL contains `needle`.
+ *
+ * The cache exists because a historical artefact is immutable per (event, t).
+ * The LIVE event breaks that assumption: /api/wards?event=live&t=2300 returns
+ * different bytes after every refresh, so the live pump calls this with
+ * 'event=live' before it refetches. Without it the "refresh" button would poll
+ * a 30-second pipeline and then serve the operator the old snapshot from
+ * memory — the single most misleading bug this app could have.
+ */
+export function invalidate(needle) {
+  for (const key of [...cache.keys()]) {
+    if (key.includes(needle)) cache.delete(key)
+  }
+}
+
 export const api = {
-  events: () => request('/api/events'),
+  events: () => request('/api/events', { cacheable: false }),
   health: () => request('/api/health', { cacheable: false }),
   state: (event, t) => request(`/api/state${qs({ event, t })}`),
   wards: (event, t) => request(`/api/wards${qs({ event, t })}`),
@@ -98,6 +114,15 @@ export const api = {
   capPreview: (wardId, event, t) => request(`/api/cap/${wardId}/preview${qs({ event, t })}`),
   capXml: (wardId, event, t) => requestText(`/api/cap/${wardId}${qs({ event, t })}`),
   capXmlUrl: (wardId, event, t) => `/api/cap/${wardId}${qs({ event, t })}`,
+
+  // ------------------------------------------------------------------ live
+  // Never cached: the whole point of these two is that the answer changes.
+  liveStatus: () => request('/api/live/status', { cacheable: false }),
+  liveRefresh: () => request('/api/live/refresh', { method: 'POST', cacheable: false }),
+
+  /** Real IMD Delhi DWR captures, written by the live pipeline. Same origin,
+   *  served off the static mount — no radar host is ever contacted. */
+  radarManifest: () => request('/static/live/frames/manifest.json', { cacheable: false }),
 }
 
 /** Warm the cache for a timestamp so the replay step does not stutter. */

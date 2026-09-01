@@ -397,6 +397,15 @@ def render_event(event, cells, exp, wards_geo, cube, booster, feat_names,
                         cat["iso"].predict(cat["booster"].predict(x))[0]), 3)
                 fc_src = "RainFuse-v0 (calibrated)"
         if not fc_block:
+            # The RainFuse table only spans 2021-06..2024-09, so a pre-2021
+            # event lands here. This is NOT a forecast — it is the observed 24 h
+            # accumulation expressed as a fraction of the IMD category, which
+            # saturates at 0.99 the moment the category has already been
+            # exceeded. Say so in the provenance rather than let it pass as a
+            # model number sitting next to RainFuse numbers from other events.
+            fc_src = ("observation ratio — RainFuse has no data for "
+                      f"{ev_id}; this is observed accumulation over the "
+                      "category, not a forecast")
             fc_block = {str(thr["heavy"]): round(min(0.99, rmax / thr["heavy"]), 2),
                         str(thr["very_heavy"]): round(min(0.99, rmax / thr["very_heavy"]), 2),
                         str(thr["extremely_heavy"]): round(min(0.99, rmax / thr["extremely_heavy"]), 2)}

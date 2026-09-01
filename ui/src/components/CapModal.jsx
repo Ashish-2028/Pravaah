@@ -105,11 +105,16 @@ export default function CapModal({ open, ward, event, t, onClose }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
-  // Reset to the rendered view each time the modal is opened on a new ward,
-  // so the presenter never re-opens it into a wall of XML.
-  useEffect(() => {
-    if (open) setTab('rendered')
-  }, [open, wardId])
+  // Reset to the rendered view each time the modal is opened on a new ward, so
+  // the presenter never re-opens it into a wall of XML. Adjusted during render
+  // rather than in an effect — an effect would paint the stale tab for a frame,
+  // which on a projector is a visible flicker.
+  const [shownFor, setShownFor] = useState(null)
+  const signature = open ? String(wardId) : null
+  if (signature !== shownFor) {
+    setShownFor(signature)
+    setTab('rendered')
+  }
 
   const enabled = Boolean(open && wardId && event && t)
   const res = useResource(() => api.capPreview(wardId, event, t), [wardId, event, t], { enabled })
