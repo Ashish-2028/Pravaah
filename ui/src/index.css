@@ -22,6 +22,50 @@
     'Liberation Mono', monospace;
 }
 
+/* ---------------------------------------------------------------- theming
+ *
+ * The @theme block above IS the dark theme, and dark is the default: this is a
+ * control-room screen and it is the one the demo opens on. The block below is
+ * the entire light theme — same variable names, different values — for the
+ * projector case, where a dark palette washes out to grey mud.
+ *
+ * Tailwind v4 compiles `bg-panel` to `background-color: var(--color-panel)`,
+ * so re-declaring the variables under a `data-theme` attribute repaints every
+ * utility in the app, opacity modifiers included, with no `light:` variants
+ * and no component knowing a theme exists. `html[data-theme]` outranks the
+ * `:root` that @theme emits, so no `!important` is needed anywhere.
+ *
+ * The two things CSS cannot reach are the MapLibre WebGL style and the
+ * recharts SVG — both take colours as JS values. Their palettes live in
+ * src/lib/theme.js and are applied by the components. If you add a colour
+ * here, add it there too.
+ */
+html[data-theme='light'] {
+  --color-bg: #eef2f7;
+  --color-panel: #ffffff;
+  --color-panel2: #e4ecf6;
+  --color-ink: #0f1b2d;
+  --color-muted: #4a5f7a;
+  --color-dim: #74869d;
+
+  /* Darkened so that teal-on-white and amber-on-white still clear a sensible
+     contrast ratio; the dark values are unreadable on a light ground. */
+  --color-teal: #0f766e;
+  --color-amber: #b45309;
+  --color-danger: #b91c1c;
+  --color-grid: #c8d5e5;
+
+  --scrollbar-thumb: #b6c6da;
+  --map-chrome-icon: none;
+}
+
+:root {
+  --scrollbar-thumb: #26364f;
+  /* MapLibre ships black control glyphs as background images; they need
+     inverting on the dark ground and must be left alone on the light one. */
+  --map-chrome-icon: invert(1) brightness(1.6);
+}
+
 html,
 body,
 #root {
@@ -39,14 +83,14 @@ body {
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #26364f transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #26364f;
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
 }
 *::-webkit-scrollbar-track {
@@ -62,15 +106,15 @@ body {
   outline: none;
 }
 .maplibregl-ctrl-group {
-  background: #111a2c !important;
-  border: 1px solid #1f2b40 !important;
+  background: var(--color-panel) !important;
+  border: 1px solid var(--color-grid) !important;
   box-shadow: none !important;
 }
 .maplibregl-ctrl-group button + button {
-  border-top: 1px solid #1f2b40 !important;
+  border-top: 1px solid var(--color-grid) !important;
 }
 .maplibregl-ctrl-group button span {
-  filter: invert(1) brightness(1.6);
+  filter: var(--map-chrome-icon);
 }
 
 @keyframes pravaah-pulse {

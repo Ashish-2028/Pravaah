@@ -1,0 +1,12 @@
+{
+ "advisory_en": "DHARAMPURA: flood probability 52% — risk level WATCH. Flagged at this risk level since 05:30 IST. Highest probability so far at 09:30 IST. About 62,723 residents are in the exposed area, with 0 hospital(s), 0 school(s) and 33.2 km of road. Main drivers: rainfall today, near an underpass, dense built-up. No pumping assets are mapped in this ward.",
+ "advisory_hi": "DHARAMPURA: बाढ़ की संभावना 52% — जोखिम स्तर निगरानी। 05:30 IST से यह वार्ड इसी जोखिम स्तर पर चिह्नित है। लगभग 62,723 निवासी प्रभावित क्षेत्र में हैं, जिनमें 0 अस्पताल, 0 विद्यालय और 33.2 किमी सड़क शामिल हैं। मुख्य कारण: आज की वर्षा, अंडरपास के पास, घना निर्मित क्षेत्र। इस वार्ड में कोई पंप दर्ज नहीं है।",
+ "actions": [
+  "Request pumping support for DHARAMPURA — no pumps are mapped here",
+  "Pre-position medical access for 62,723 residents",
+  "Barricade the underpass approaches — they flood first and trap vehicles"
+ ],
+ "source": "deterministic",
+ "generated": "2026-09-01T23:50Z",
+ "cached": true
+}

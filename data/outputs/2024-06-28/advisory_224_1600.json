@@ -1,0 +1,12 @@
+{
+ "advisory_en": "PANDAV NAGAR: flood probability 54% — risk level WATCH. Flagged at this risk level since 05:30 IST. Highest probability so far at 09:30 IST. About 48,094 residents are in the exposed area, with 7 hospital(s), 6 school(s) and 46.4 km of road. Main drivers: rainfall today, near an underpass, near a bridge structure. No pumping assets are mapped in this ward.",
+ "advisory_hi": "PANDAV NAGAR: बाढ़ की संभावना 54% — जोखिम स्तर निगरानी। 05:30 IST से यह वार्ड इसी जोखिम स्तर पर चिह्नित है। लगभग 48,094 निवासी प्रभावित क्षेत्र में हैं, जिनमें 7 अस्पताल, 6 विद्यालय और 46.4 किमी सड़क शामिल हैं। मुख्य कारण: आज की वर्षा, अंडरपास के पास, पुल संरचना के पास। इस वार्ड में कोई पंप दर्ज नहीं है।",
+ "actions": [
+  "Request pumping support for PANDAV NAGAR — no pumps are mapped here",
+  "Confirm access routes to 7 hospital(s) remain passable",
+  "Barricade the underpass approaches — they flood first and trap vehicles"
+ ],
+ "source": "deterministic",
+ "generated": "2026-09-01T23:50Z",
+ "cached": true
+}

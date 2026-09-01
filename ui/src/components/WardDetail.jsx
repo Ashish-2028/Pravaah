@@ -12,12 +12,14 @@ import { Building2, Droplets, GraduationCap, Route, ShieldAlert, Users } from 'l
 import { api } from '../lib/api'
 import { BAND_COLOR, ci90, hhmm, num, pct } from '../lib/format'
 import { useResource } from '../lib/hooks'
+import { useChartTheme } from '../lib/theme'
 import DriverBars from './DriverBars'
 import { ErrorBox, Spinner } from './ui'
 
 const OPERATING_POINT = 0.5
 
 function Timeline({ rows }) {
+  const ct = useChartTheme()
   if (!rows || rows.length < 2) {
     return (
       <div className="px-3 py-4 text-xs text-muted">
@@ -36,11 +38,11 @@ function Timeline({ rows }) {
               <stop offset="100%" stopColor="#14b8a6" stopOpacity={0.04} />
             </linearGradient>
           </defs>
-          <CartesianGrid stroke="#1f2b40" vertical={false} />
-          <XAxis dataKey="t" stroke="#5d738f" tick={{ fontSize: 10 }} tickLine={false} axisLine={{ stroke: '#1f2b40' }} />
+          <CartesianGrid stroke={ct.grid} vertical={false} />
+          <XAxis dataKey="t" stroke={ct.axis} tick={{ fontSize: 10, fill: ct.tick }} tickLine={false} axisLine={{ stroke: ct.grid }} />
           <YAxis
             domain={[0, 100]}
-            stroke="#5d738f"
+            stroke={ct.axis}
             tick={{ fontSize: 10 }}
             tickLine={false}
             axisLine={false}
@@ -48,12 +50,12 @@ function Timeline({ rows }) {
           />
           <Tooltip
             contentStyle={{
-              background: '#111a2c',
-              border: '1px solid #1f2b40',
+              background: ct.tooltipBg,
+              border: `1px solid ${ct.grid}`,
               borderRadius: 6,
               fontSize: 12,
             }}
-            labelStyle={{ color: '#8ba0bd' }}
+            labelStyle={{ color: ct.tick }}
             formatter={(v, n) => [`${v.toFixed(1)}%`, n === 'p' ? 'P(flood)' : 'Risk score']}
           />
           <ReferenceLine

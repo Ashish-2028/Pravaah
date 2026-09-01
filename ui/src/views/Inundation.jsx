@@ -4,6 +4,7 @@ import RankedList from '../components/RankedList'
 import WardDetail from '../components/WardDetail'
 import AdvisoryDrawer from '../components/AdvisoryDrawer'
 import CapModal from '../components/CapModal'
+import { Prov } from '../components/Provenance'
 import { ErrorBox, Panel, Spinner } from '../components/ui'
 import { LayerSwitch } from './Command'
 import { findWard, rankWards, useWards } from '../lib/hooks'
@@ -34,7 +35,10 @@ export default function Inundation() {
   return (
     <div className="relative grid h-full grid-cols-[280px_1fr_360px] gap-2 overflow-hidden p-2">
       <div className="grid min-h-0 grid-rows-[auto_1fr] gap-2">
-        <Panel title="Exposure at high + critical">
+        <Panel
+          title="Exposure at high + critical"
+          right={<Prov>counted, not modelled</Prov>}
+        >
           <dl className="grid grid-cols-2 gap-x-3 gap-y-2 p-3 text-[11.5px]">
             {[
               ['Wards', num(totals.wards)],
@@ -77,7 +81,10 @@ export default function Inundation() {
             onSelectWard={selectWard}
             overlay={
               <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-md border border-grid bg-panel/90 px-2.5 py-1.5 text-[10.5px] text-muted">
-                Issued {hhmm(t)} UTC · click a ward for drivers, assets and advisory
+                <div>Issued {hhmm(t)} UTC · click a ward for drivers, assets and advisory</div>
+                <Prov className="mt-0.5">
+                  FloodRisk-v0 · exposure counts from the static asset layer
+                </Prov>
               </div>
             }
           />

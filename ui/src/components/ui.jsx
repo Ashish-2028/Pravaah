@@ -90,10 +90,13 @@ export function Pill({ color, children, className }) {
   )
 }
 
-export function Stat({ label, value, sub, color, accent }) {
+export function Stat({ label, value, sub, color, accent, title, footer }) {
   return (
     <div className="min-w-0 rounded-lg border border-grid bg-panel px-3 py-2.5">
-      <div className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+      <div
+        title={title || undefined}
+        className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-muted"
+      >
         {label}
       </div>
       <div
@@ -109,11 +112,13 @@ export function Stat({ label, value, sub, color, accent }) {
             className="h-full rounded"
             style={{
               width: `${Math.max(2, Math.min(100, accent * 100))}%`,
-              background: color || '#14b8a6',
+              background: color || 'var(--color-teal)',
             }}
           />
         </div>
       )}
+      {/* Provenance line: which model produced the number above it. */}
+      {footer && <div className="mt-1.5">{footer}</div>}
     </div>
   )
 }

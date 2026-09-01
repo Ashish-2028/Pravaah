@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Map as MapLibreMap, NavigationControl } from 'maplibre-gl'
 import { BAND_COLOR, compact, pct } from '../lib/format'
 import { LAYER_COUNT, TOGGLES, getPrefs, loadAll, loadedCount, setPref } from '../lib/basemap'
+import { MAP_THEME, rampGradient, useTheme } from '../lib/theme'
 
 // DO NOT call setWorkerUrl() here. It was tried and it silently breaks the map.
 //
@@ -91,42 +92,38 @@ import { LAYER_COUNT, TOGGLES, getPrefs, loadAll, loadedCount, setPref } from '.
 //
 // If that count is 0, the map is correct and there is nothing to fix.
 
+// ---------------------------------------------------------------- theming
+//
+// MapLibre paint properties are JSON inside a WebGL style; they cannot read a
+// CSS custom property, so the map does NOT come along for free when the rest
+// of the app swaps `data-theme`. Every colour below is therefore a lookup in
+// MAP_THEME (src/lib/theme.js), every spec is a function of that palette, and
+// a single effect re-applies the lot when the theme changes.
+//
+// It re-applies rather than re-creates on purpose: setStyle() would wipe the
+// sources and layers and re-enter the load race documented at the top of this
+// file, and a remount would throw away the operator's pan and zoom.
+
 // A completely local style. No tile server, no sprite, no glyphs — which also
 // means no symbol layers anywhere in this file. Airplane-mode safe by
 // construction.
-const BLANK_STYLE = {
+const blankStyle = (mc) => ({
   version: 8,
   sources: {},
-  layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#0b1220' } }],
-}
+  layers: [{ id: 'bg', type: 'background', paint: { 'background-color': mc.ground } }],
+})
 
-// Linear in probability so the legend stays honest, but bright enough at the
-// low end that a 20% ward is still readable against the #0b1220 ground.
-const RAMP = [
-  0.0, '#17304d',
-  0.25, '#0e7490',
-  0.45, '#14b8a6',
-  0.6, '#f59e0b',
-  0.8, '#ef4444',
-  1.0, '#ff6b6b',
-]
-
-function fillExpression(layer) {
+function fillExpression(layer, mc) {
+  const ramp = mc.ramp
   if (layer === 'exposure') {
-    return [
-      'interpolate',
-      ['linear'],
-      ['get', 'people'],
-      0, '#17304d',
-      20000, '#0e7490',
-      45000, '#14b8a6',
-      70000, '#f59e0b',
-      100000, '#ef4444',
-      150000, '#ff6b6b',
-    ]
+    // Same six colours, re-scaled from probability to people.
+    const people = [0, 20000, 45000, 70000, 100000, 150000]
+    const expr = ['interpolate', ['linear'], ['get', 'people']]
+    for (let i = 0; i < people.length; i += 1) expr.push(people[i], ramp[i * 2 + 1])
+    return expr
   }
   const prop = layer === 'risk_score' ? 'risk_score' : 'p_flood'
-  return ['interpolate', ['linear'], ['get', prop], ...RAMP]
+  return ['interpolate', ['linear'], ['get', prop], ...ramp]
 }
 
 // ---------------------------------------------------------------- basemap
@@ -167,7 +164,7 @@ function zoomScaled(interpolation, stops, weight) {
   return expr
 }
 
-const LAYER_SPECS = {
+const layerSpecs = (mc) => ({
   waterways: [
     {
       id: 'bm-water',
@@ -178,10 +175,10 @@ const LAYER_SPECS = {
         'line-color': [
           'match',
           ['get', 'waterway'],
-          ['river'], '#22648f',
-          ['canal'], '#1d5678',
-          ['stream'], '#1a4667',
-          '#173a55', // drains and ditches — 1,505 of the 1,958, keep them quiet
+          ['river'], mc.river,
+          ['canal'], mc.canal,
+          ['stream'], mc.stream,
+          mc.drain, // drains and ditches — 1,505 of the 1,958, keep them quiet
         ],
         'line-width': zoomScaled(
           ['exponential', 1.4],
@@ -201,7 +198,11 @@ const LAYER_SPECS = {
       layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: {
         // Brightens with zoom for the same reason as the major tier below.
-        'line-color': ['interpolate', ['linear'], ['zoom'], 11, '#2b3c53', 14, '#516684'],
+        'line-color': [
+          'interpolate', ['linear'], ['zoom'],
+          11, mc.roadSecondaryLow,
+          14, mc.roadSecondaryHigh,
+        ],
         'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 11, 0.4, 13, 1.2, 14, 2.1],
         'line-opacity': ['interpolate', ['linear'], ['zoom'], 10.8, 0, 11.6, 0.5, 14, 0.8],
       },
@@ -216,7 +217,7 @@ const LAYER_SPECS = {
       minzoom: 11.5,
       layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: {
-        'line-color': '#0d1523',
+        'line-color': mc.roadCasing,
         'line-width': zoomScaled(['exponential', 1.5], [[11.5, 2.6], [14, 7]], majorWeight),
         'line-opacity': ['interpolate', ['linear'], ['zoom'], 11.5, 0, 12.2, 0.8],
       },
@@ -232,7 +233,12 @@ const LAYER_SPECS = {
         // have to survive being seen THROUGH a 55%-opaque choropleth fill, and
         // a colour dark enough to be tasteful at z9 simply disappears there.
         // Road class is still legible — it is carried by width.
-        'line-color': ['interpolate', ['linear'], ['zoom'], 9, '#33465f', 12, '#546d92', 14, '#7089ad'],
+        'line-color': [
+          'interpolate', ['linear'], ['zoom'],
+          9, mc.roadMajorLow,
+          12, mc.roadMajorMid,
+          14, mc.roadMajorHigh,
+        ],
         'line-width': zoomScaled(
           ['exponential', 1.5],
           [[8, 0.4], [10, 1], [12, 2.2], [14, 4.4]],
@@ -252,7 +258,7 @@ const LAYER_SPECS = {
       type: 'line',
       layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: {
-        'line-color': '#f59e0b',
+        'line-color': mc.underpass,
         'line-blur': 3,
         'line-width': zoomScaled(['linear'], [[8, 6], [12, 11], [14, 18]], underpassWeight),
         'line-opacity': zoomScaled(
@@ -267,7 +273,7 @@ const LAYER_SPECS = {
       type: 'line',
       layout: { 'line-cap': 'butt', 'line-join': 'round' },
       paint: {
-        'line-color': ['match', ['get', 'highway'], PED, '#a9761d', '#f59e0b'],
+        'line-color': ['match', ['get', 'highway'], PED, mc.underpassPed, mc.underpass],
         'line-width': zoomScaled(['linear'], [[8, 1.1], [12, 2.6], [14, 4.2]], underpassWeight),
         'line-opacity': 0.95,
         'line-dasharray': [2, 1.4],
@@ -297,7 +303,7 @@ const LAYER_SPECS = {
         // A whisper of fill rather than a true hollow: it keeps the ring
         // legible over a bright choropleth AND makes the marker a reliable
         // hover target, which a zero-opacity circle is not.
-        'circle-color': '#e5edf7',
+        'circle-color': mc.blackspot,
         'circle-opacity': [
           'interpolate', ['linear'], ['zoom'],
           7.2, 0,
@@ -308,7 +314,7 @@ const LAYER_SPECS = {
           [[9, 4.5], [12, 7.5], [14, 11]],
           ['match', ['get', 'confidence'], 'high', 1, 0.68],
         ),
-        'circle-stroke-color': '#e5edf7',
+        'circle-stroke-color': mc.blackspot,
         'circle-stroke-width': ['match', ['get', 'confidence'], 'high', 1.8, 1],
         'circle-stroke-opacity': [
           'interpolate', ['linear'], ['zoom'],
@@ -322,7 +328,7 @@ const LAYER_SPECS = {
       type: 'circle',
       minzoom: 7,
       paint: {
-        'circle-color': '#e5edf7',
+        'circle-color': mc.blackspot,
         'circle-radius': ['match', ['get', 'confidence'], 'high', 1.7, 1.1],
         'circle-opacity': [
           'interpolate', ['linear'], ['zoom'],
@@ -333,12 +339,12 @@ const LAYER_SPECS = {
     },
   ],
 
-  hospitals: [assetLayer('bm-hospitals', '#f472b6')],
-  schools: [assetLayer('bm-schools', '#a78bfa')],
-  pumps: [assetLayer('bm-pumps', '#38bdf8')],
-}
+  hospitals: [assetLayer('bm-hospitals', '#f472b6', mc)],
+  schools: [assetLayer('bm-schools', '#a78bfa', mc)],
+  pumps: [assetLayer('bm-pumps', '#38bdf8', mc)],
+})
 
-function assetLayer(id, color) {
+function assetLayer(id, color, mc) {
   return {
     id,
     type: 'circle',
@@ -348,7 +354,7 @@ function assetLayer(id, color) {
       'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 1.8, 13, 3.4, 14, 5],
       'circle-opacity': ['interpolate', ['linear'], ['zoom'], 10.8, 0, 11.4, 0.9],
       'circle-stroke-width': 0.7,
-      'circle-stroke-color': '#0b1220',
+      'circle-stroke-color': mc.assetHalo,
       'circle-stroke-opacity': ['interpolate', ['linear'], ['zoom'], 10.8, 0, 11.4, 0.9],
     },
   }
@@ -356,13 +362,13 @@ function assetLayer(id, color) {
 
 /** Swatch colour per toggle — each one is the actual paint colour of the layer
  *  it switches, so the panel doubles as the legend. */
-const TOGGLE_DOT = {
-  roads: '#546d92',
-  water: '#22648f',
+const toggleDot = (mc) => ({
+  roads: mc.roadMajorMid === '#ffffff' ? mc.roadCasing : mc.roadMajorMid,
+  water: mc.river,
   assets: '#a78bfa',
-  underpasses: '#f59e0b',
-  blackspots: '#e5edf7',
-}
+  underpasses: mc.underpass,
+  blackspots: mc.blackspot,
+})
 
 export const ASSET_LEGEND = [
   ['Hospitals', '#f472b6'],
@@ -484,10 +490,21 @@ export default function MapCanvas({
   onSelectWard,
   overlay = null,
   points = null, // optional [{lat, lon, value}] rain-grid cells
-  pointLabel = 'P(>15 mm)',
+  // No default threshold text: 'P(>15 mm)' used to live here, and it was
+  // wrong — the exceedance heads are 5 mm and 10 mm. Callers pass a label
+  // built from the API's provenance block (see lib/format.js).
+  pointLabel = 'Grid value',
   basemap = true,
   className = '',
 }) {
+  const theme = useTheme((st) => st.theme)
+  const mc = MAP_THEME[theme]
+  // Callbacks in this component outlive the render that created them (the
+  // basemap walk runs for seconds), so they read the palette off a ref rather
+  // than closing over a stale one.
+  const mcRef = useRef(mc)
+  mcRef.current = mc
+
   const container = useRef(null)
   const mapRef = useRef(null)
   const fitted = useRef(false)
@@ -513,7 +530,7 @@ export default function MapCanvas({
     if (!container.current || mapRef.current) return undefined
     const map = new MapLibreMap({
       container: container.current,
-      style: BLANK_STYLE,
+      style: blankStyle(mcRef.current),
       center: [77.1, 28.63],
       zoom: 9,
       attributionControl: false,
@@ -577,7 +594,7 @@ export default function MapCanvas({
           type: 'fill',
           source: 'wards',
           paint: {
-            'fill-color': fillExpression(layer),
+            'fill-color': fillExpression(layer, mcRef.current),
             // 0.82 at city zoom, where the choropleth IS the message and the
             // streets are only a hint of shape underneath; thinning to 0.55 by
             // z14, where the operator is looking at one ward and needs to see
@@ -590,21 +607,29 @@ export default function MapCanvas({
           id: 'wards-line',
           type: 'line',
           source: 'wards',
-          paint: { 'line-color': '#1f2b40', 'line-width': 0.6, 'line-opacity': 0.9 },
+          paint: {
+            'line-color': mcRef.current.wardLine,
+            'line-width': 0.6,
+            'line-opacity': 0.9,
+          },
         })
         map.addLayer({
           id: 'wards-critical',
           type: 'line',
           source: 'wards',
           filter: ['==', ['get', 'risk_band'], 'critical'],
-          paint: { 'line-color': '#ef4444', 'line-width': 2, 'line-opacity': 0.9 },
+          paint: {
+            'line-color': mcRef.current.wardCritical,
+            'line-width': 2,
+            'line-opacity': 0.9,
+          },
         })
         map.addLayer({
           id: 'wards-selected',
           type: 'line',
           source: 'wards',
           filter: ['==', ['get', 'ward_id'], '__none__'],
-          paint: { 'line-color': '#e5edf7', 'line-width': 2.4 },
+          paint: { 'line-color': mcRef.current.wardSelected, 'line-width': 2.4 },
         })
         // The ward layers land above whatever basemap files already arrived,
         // so re-assert the canonical order the moment they exist.
@@ -652,7 +677,7 @@ export default function MapCanvas({
 
     const draw = (name, fc) => {
       if (stopped || map._removed) return
-      const specs = LAYER_SPECS[name]
+      const specs = layerSpecs(mcRef.current)[name]
       if (!specs || !fc.features.length) return
       const src = `bm-${name}`
       // Read the module-scope prefs, not React state: this callback outlives
@@ -685,7 +710,7 @@ export default function MapCanvas({
     const map = mapRef.current
     if (!map || !ready) return
     safe(map, () => {
-      Object.entries(LAYER_SPECS).forEach(([name, specs]) => {
+      Object.entries(layerSpecs(mcRef.current)).forEach(([name, specs]) => {
         const visibility = groups[FILE_GROUP[name]] ? 'visible' : 'none'
         specs.forEach((spec) => {
           if (map.getLayer(spec.id)) map.setLayoutProperty(spec.id, 'visibility', visibility)
@@ -778,8 +803,45 @@ export default function MapCanvas({
   useEffect(() => {
     const map = mapRef.current
     if (!map || !ready || !map.getLayer('wards-fill')) return
-    safe(map, () => map.setPaintProperty('wards-fill', 'fill-color', fillExpression(layer)))
-  }, [ready, layer])
+    safe(map, () => map.setPaintProperty('wards-fill', 'fill-color', fillExpression(layer, mc)))
+  }, [ready, layer, mc])
+
+  // ------------------------------------------------------------ theme swap
+  //
+  // Re-applies the palette to every layer that already exists. Layers added
+  // LATER are fine without any bookkeeping here: the basemap draw callback
+  // reads mcRef, so anything that lands after a theme flip is built with the
+  // current colours. Paint properties only — no layer is added, removed or
+  // reordered, so this cannot disturb the stack or the load race.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    safe(
+      map,
+      () => {
+        if (map.getLayer('bg')) map.setPaintProperty('bg', 'background-color', mc.ground)
+        const solid = [
+          ['wards-line', 'line-color', mc.wardLine],
+          ['wards-critical', 'line-color', mc.wardCritical],
+          ['wards-selected', 'line-color', mc.wardSelected],
+          ['rain-cells', 'circle-stroke-color', mc.ground],
+          ['rain-cells', 'circle-color', ['interpolate', ['linear'], ['get', 'value'], ...mc.ramp]],
+        ]
+        solid.forEach(([id, prop, value]) => {
+          if (map.getLayer(id)) map.setPaintProperty(id, prop, value)
+        })
+        Object.values(layerSpecs(mc)).forEach((specs) => {
+          specs.forEach((spec) => {
+            if (!map.getLayer(spec.id)) return
+            Object.entries(spec.paint || {}).forEach(([prop, value]) => {
+              if (prop.endsWith('-color')) map.setPaintProperty(spec.id, prop, value)
+            })
+          })
+        })
+      },
+      'theme repaint',
+    )
+  }, [ready, mc])
 
   // selection outline
   useEffect(() => {
@@ -850,10 +912,12 @@ export default function MapCanvas({
           source: 'rain',
           paint: {
             'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 6, 12, 22],
-            'circle-color': ['interpolate', ['linear'], ['get', 'value'], ...RAMP],
+            'circle-color': [
+              'interpolate', ['linear'], ['get', 'value'], ...mcRef.current.ramp,
+            ],
             'circle-opacity': 0.55,
             'circle-stroke-width': 0.5,
-            'circle-stroke-color': '#0b1220',
+            'circle-stroke-color': mcRef.current.ground,
           },
         })
         restack(map)
@@ -902,7 +966,7 @@ export default function MapCanvas({
                   <span
                     className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full"
                     style={{
-                      background: on ? TOGGLE_DOT[t.key] || '#40587a' : '#334155',
+                      background: on ? toggleDot(mc)[t.key] || '#40587a' : 'var(--color-grid)',
                     }}
                   />
                   <span className="min-w-0">{t.label}</span>
@@ -1023,8 +1087,7 @@ export default function MapCanvas({
         <div
           className="mt-1.5 h-2 w-40 rounded"
           style={{
-            background:
-              'linear-gradient(90deg,#17304d 0%,#0e7490 25%,#14b8a6 45%,#f59e0b 60%,#ef4444 80%,#ff6b6b 100%)',
+            background: rampGradient(theme),
           }}
         />
         <div className="tabular mt-1 flex justify-between text-[9px] text-muted">

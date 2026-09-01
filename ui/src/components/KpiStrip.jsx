@@ -1,7 +1,16 @@
-import { CITY_RISK_COLOR, compact, minutes, num, pct } from '../lib/format'
+import { CITY_RISK_COLOR, compact, minutes, num, pct, thresholdLabel, thresholdTitle } from '../lib/format'
 import { ErrorBox, Spinner, Stat } from './ui'
 
-export default function KpiStrip({ res }) {
+/**
+ * `provenance` is the block from the matching /api/rain response.
+ *
+ * It is what labels the exceedance KPI. The field is called `p3h50`, which is
+ * a legacy contract name and NOT a 50 mm threshold — the head is fitted at the
+ * millimetre value the API reports in head_thresholds_mm.p50. Without the
+ * block we say "P(3 h > threshold)" rather than printing a number we cannot
+ * source.
+ */
+export default function KpiStrip({ res, provenance = null }) {
   if (res.error && !res.data) return <ErrorBox error={res.error} onRetry={res.reload} />
   if (!res.data) return <Spinner label="Loading city state" />
   const k = res.data
@@ -19,7 +28,8 @@ export default function KpiStrip({ res }) {
         accent={Math.min(1, k.rain_now_mm_h / 80)}
       />
       <Stat
-        label="P(3 h > 50 mm)"
+        label={thresholdLabel(provenance, 'p50', '3 h')}
+        title={thresholdTitle(provenance, 'p50')}
         value={pct(k.p3h50)}
         sub="calibrated exceedance probability"
         color={k.p3h50 >= 0.6 ? '#ef4444' : k.p3h50 >= 0.3 ? '#f59e0b' : '#14b8a6'}

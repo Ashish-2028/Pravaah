@@ -1,0 +1,12 @@
+{
+ "advisory_en": "KASHMERE GATE: flood probability 62% — risk level WATCH. Flagged at this risk level since 22:30 IST. About 77,589 residents are in the exposed area, with 3 hospital(s), 4 school(s) and 45.2 km of road. Main drivers: near an underpass, rainfall today, dense built-up. 3 pump(s) are mapped in this ward.",
+ "advisory_hi": "KASHMERE GATE: बाढ़ की संभावना 62% — जोखिम स्तर निगरानी। 22:30 IST से यह वार्ड इसी जोखिम स्तर पर चिह्नित है। लगभग 77,589 निवासी प्रभावित क्षेत्र में हैं, जिनमें 3 अस्पताल, 4 विद्यालय और 45.2 किमी सड़क शामिल हैं। मुख्य कारण: अंडरपास के पास, आज की वर्षा, घना निर्मित क्षेत्र। इस वार्ड में 3 पंप उपलब्ध हैं।",
+ "actions": [
+  "Deploy the 3 mapped pump(s) to the lowest points of KASHMERE GATE",
+  "Confirm access routes to 3 hospital(s) remain passable",
+  "Barricade the underpass approaches — they flood first and trap vehicles"
+ ],
+ "source": "deterministic",
+ "generated": "2026-09-01T23:50Z",
+ "cached": true
+}

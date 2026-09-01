@@ -272,7 +272,13 @@ def update(c, heads, cells, exp, wards_geo, inunda) -> dict:
     frames = [now - timedelta(hours=k) for k in range(N_FRAMES - 1, -1, -1)]
     bands = {k: tuple(v) for k, v in c["risk_bands"].items()}
 
-    tmp = OUTPUTS / "_live_tmp"
+    # PID-scoped temp dir. A shared "_live_tmp" is a race: the 15-minute loop
+    # and a manual run (or an /api/live/refresh) can overlap, and whichever
+    # finishes first renames the directory out from under the other, which
+    # fails mid-write. Observed exactly that. Unique per process, cleaned up
+    # on every exit path.
+    import os
+    tmp = OUTPUTS / f"_live_tmp_{os.getpid()}"
     if tmp.exists():
         shutil.rmtree(tmp)
     (tmp / "frames").mkdir(parents=True)
@@ -385,7 +391,7 @@ def update(c, heads, cells, exp, wards_geo, inunda) -> dict:
             "updated_ist": (datetime.now(timezone.utc) +
                             timedelta(hours=5, minutes=30)).strftime("%d %b %H:%M IST")}
     (tmp / "meta.json").write_text(json.dumps(meta, indent=2))
-    old = OUTPUTS / "_live_old"
+    old = OUTPUTS / f"_live_old_{os.getpid()}"
     shutil.rmtree(old, ignore_errors=True)
     if LIVE.exists():
         LIVE.rename(old)
@@ -426,6 +432,10 @@ def main() -> int:
             print(f"[{datetime.now(timezone.utc):%H:%M}Z] live update FAILED "
                   f"({type(exc).__name__}: {exc}) — previous snapshot retained",
                   flush=True)
+        finally:
+            import os as _os
+            for junk in OUTPUTS.glob(f"_live_*_{_os.getpid()}"):
+                shutil.rmtree(junk, ignore_errors=True)
         if not args.loop:
             return 0
         time.sleep(INTERVAL_S)

@@ -81,6 +81,48 @@ export function topDriver(drivers) {
   return drivers[0][0]
 }
 
+// ------------------------------------------------------- threshold labelling
+//
+// `p15` and `p50` are LEGACY CONTRACT NAMES, not thresholds. The two
+// exceedance heads are fitted at 5 mm and 10 mm on the ERA5 scale, and the API
+// says so in every rain response:
+//
+//     provenance.head_thresholds_mm = { p15: 5.0, p50: 10.0 }
+//
+// The UI used to read the digits out of the field name and print "P(> 15 mm)"
+// and "P(> 50 mm)". That is a factor-of-three overstatement of what the model
+// predicts, in front of judges who will know 50 mm/3 h is a cloudburst
+// criterion. Everything below reads the provenance block instead.
+//
+// WHEN THE BLOCK IS ABSENT WE DO NOT GUESS. An unlabelled threshold is a
+// weaker slide; an invented one is a wrong claim.
+
+/** mm value for a head key, or null when the response did not declare one. */
+export function headThreshold(provenance, key) {
+  const mm = provenance?.head_thresholds_mm?.[key]
+  return typeof mm === 'number' && Number.isFinite(mm) ? mm : null
+}
+
+/**
+ * "P(> 5 mm)" when the API declared the head, "P(> threshold)" when it did not.
+ * `window` is optional accumulation text, e.g. thresholdLabel(p, 'p50', '3 h')
+ * -> "P(3 h > 10 mm)".
+ */
+export function thresholdLabel(provenance, key, window = '') {
+  const mm = headThreshold(provenance, key)
+  const w = window ? `${window} ` : ''
+  return mm === null ? `P(${w}> threshold)` : `P(${w}> ${num(mm, mm % 1 ? 1 : 0)} mm)`
+}
+
+/** Hover text that explains an unlabelled threshold instead of hiding it. */
+export function thresholdTitle(provenance, key) {
+  const mm = headThreshold(provenance, key)
+  if (mm === null) {
+    return `This response carried no provenance.head_thresholds_mm, so the exceedance threshold for the "${key}" head is not stated. It is NOT the number in the field name — those are legacy contract names.`
+  }
+  return `Exceedance probability above ${mm} mm (ERA5 scale). Field name "${key}" is a legacy contract name, not the threshold.`
+}
+
 /** Diverging control-room ramp used by every choropleth. */
 export function rampColor(v) {
   const stops = [

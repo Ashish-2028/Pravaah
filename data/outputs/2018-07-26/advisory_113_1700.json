@@ -1,0 +1,12 @@
+{
+ "advisory_en": "MAHAVIR NAGAR: flood probability 73% — risk level HIGH. Flagged at this risk level since 05:30 IST. Highest probability so far at 16:30 IST. About 49,492 residents are in the exposed area, with 3 hospital(s), 7 school(s) and 46.3 km of road. Main drivers: rainfall today, dense built-up, near an underpass. No pumping assets are mapped in this ward.",
+ "advisory_hi": "MAHAVIR NAGAR: बाढ़ की संभावना 73% — जोखिम स्तर उच्च। 05:30 IST से यह वार्ड इसी जोखिम स्तर पर चिह्नित है। लगभग 49,492 निवासी प्रभावित क्षेत्र में हैं, जिनमें 3 अस्पताल, 7 विद्यालय और 46.3 किमी सड़क शामिल हैं। मुख्य कारण: आज की वर्षा, घना निर्मित क्षेत्र, अंडरपास के पास। इस वार्ड में कोई पंप दर्ज नहीं है।",
+ "actions": [
+  "Request pumping support for MAHAVIR NAGAR — no pumps are mapped here",
+  "Confirm access routes to 3 hospital(s) remain passable",
+  "Barricade the underpass approaches — they flood first and trap vehicles"
+ ],
+ "source": "deterministic",
+ "generated": "2026-09-01T23:50Z",
+ "cached": true
+}

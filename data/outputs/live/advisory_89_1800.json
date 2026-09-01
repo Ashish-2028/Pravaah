@@ -1,0 +1,12 @@
+{
+ "advisory_en": "PAHAR GANJ: flood probability 49% — risk level WATCH. About 47,352 residents are in the exposed area, with 5 hospital(s), 5 school(s) and 31.6 km of road. Main drivers: rainfall today, near an underpass, dense built-up. 1 pump(s) are mapped in this ward.",
+ "advisory_hi": "PAHAR GANJ: बाढ़ की संभावना 49% — जोखिम स्तर निगरानी। लगभग 47,352 निवासी प्रभावित क्षेत्र में हैं, जिनमें 5 अस्पताल, 5 विद्यालय और 31.6 किमी सड़क शामिल हैं। मुख्य कारण: आज की वर्षा, अंडरपास के पास, घना निर्मित क्षेत्र। इस वार्ड में 1 पंप उपलब्ध हैं।",
+ "actions": [
+  "Deploy the 1 mapped pump(s) to the lowest points of PAHAR GANJ",
+  "Confirm access routes to 5 hospital(s) remain passable",
+  "Barricade the underpass approaches — they flood first and trap vehicles"
+ ],
+ "source": "deterministic",
+ "generated": "2026-09-01T23:50Z",
+ "cached": true
+}

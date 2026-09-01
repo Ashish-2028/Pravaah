@@ -12,9 +12,11 @@ import {
 } from 'recharts'
 import MapCanvas from '../components/MapCanvas'
 import { ErrorBox, Panel, Spinner } from '../components/ui'
+import ProvenancePanel, { Prov, modelName } from '../components/Provenance'
 import { useRain, useWards } from '../lib/hooks'
 import { hhmm, num, pct } from '../lib/format'
 import { useStore } from '../lib/store'
+import { useChartTheme } from '../lib/theme'
 
 // The official IMD heavy-rainfall categories, in mm/24 h.
 const IMD = [
@@ -30,6 +32,12 @@ export default function Forecast() {
   const leadH = LEADS.includes(lead) ? lead : 24
   const rainRes = useRain(event, t, 'forecast', leadH)
   const wardsRes = useWards(event, t)
+  const ct = useChartTheme()
+  // The provenance block names the NOWCAST source. It says nothing about the
+  // 6-72 h head, so this view does not borrow that name for a number the
+  // nowcast did not produce — it says the source is undeclared instead.
+  const prov = rainRes.data?.provenance || null
+  const forecastModel = modelName(prov?.forecast_source, null)
 
   const cells = rainRes.data?.cells || []
 
@@ -95,8 +103,16 @@ export default function Forecast() {
             pointLabel={`q90 vs ${threshold} mm`}
             overlay={
               <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-md border border-grid bg-panel/90 px-2.5 py-1.5 text-[10.5px] text-muted">
-                forecast · lead {rainRes.data.lead_h} h · {IMD.find((c) => c.mm === threshold)?.label}{' '}
-                ≥ {threshold} mm · issued {hhmm(t)} UTC
+                <div>
+                  forecast · lead {rainRes.data.lead_h} h ·{' '}
+                  {IMD.find((c) => c.mm === threshold)?.label} ≥ {threshold} mm · issued {hhmm(t)}{' '}
+                  UTC
+                </div>
+                <Prov className="mt-0.5">
+                  {forecastModel
+                    ? `${forecastModel} · q90 vs IMD category`
+                    : 'model-derived · forecast source not declared by the API'}
+                </Prov>
               </div>
             }
           />
@@ -141,12 +157,13 @@ export default function Forecast() {
           </div>
         </Panel>
 
-        <Panel title="RainFuse correction">
-          <div className="p-3 text-[11.5px] leading-relaxed text-muted">
+        <Panel title="RainFuse correction · provenance">
+          <div className="p-3 pb-0 text-[11.5px] leading-relaxed text-muted">
             Side-by-side raw ECMWF vs RainFuse vs observed needs three grids per issue time; the
             current contract publishes one. The comparison lives in the Verification view&apos;s
             ablation table, where the raw-NWP baseline row is the same claim in numbers.
           </div>
+          <ProvenancePanel provenance={prov} />
         </Panel>
 
         <Panel title="Quantile spread — wettest 12 cells" bodyClass="min-h-0">
@@ -154,16 +171,16 @@ export default function Forecast() {
             <div className="absolute inset-0 p-1 pb-3">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={fan} margin={{ top: 10, right: 12, bottom: 4, left: -18 }}>
-                  <CartesianGrid stroke="#1f2b40" vertical={false} />
+                  <CartesianGrid stroke={ct.grid} vertical={false} />
                   <XAxis dataKey="cell" hide />
                   <YAxis
-                    stroke="#5d738f"
-                    tick={{ fontSize: 10, fill: '#8ba0bd' }}
+                    stroke={ct.axis}
+                    tick={{ fontSize: 10, fill: ct.tick }}
                     tickFormatter={(v) => `${v}`}
                   />
                   <Tooltip
-                    contentStyle={{ background: '#111a2c', border: '1px solid #1f2b40', borderRadius: 6, fontSize: 12 }}
-                    labelStyle={{ color: '#8ba0bd' }}
+                    contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.grid}`, borderRadius: 6, fontSize: 12 }}
+                    labelStyle={{ color: ct.tick }}
                     formatter={(v, n) => [`${num(v, 1)} mm`, n === 'band' ? 'q10→q90 band' : n]}
                   />
                   <Bar isAnimationActive={false} dataKey="q10" stackId="a" fill="transparent" />

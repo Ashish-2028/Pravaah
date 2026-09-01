@@ -16,17 +16,22 @@ import {
 import { ErrorBox, Panel, Spinner } from '../components/ui'
 import { useMetrics } from '../lib/hooks'
 import { num } from '../lib/format'
+import { useChartTheme } from '../lib/theme'
 
-const AXIS = { stroke: '#5d738f', tick: { fontSize: 10, fill: '#8ba0bd' }, tickLine: false }
-const TIP = {
+// Recharts takes colours as JS values, so — like the map — these do not come
+// along for free when the CSS custom properties swap. They are read from
+// CHART_THEME instead. `ct` is threaded through as a prop rather than hooked
+// in each chart so the module-scope helpers stay pure.
+const axisOf = (ct) => ({ stroke: ct.axis, tick: { fontSize: 10, fill: ct.tick }, tickLine: false })
+const tipOf = (ct) => ({
   contentStyle: {
-    background: '#111a2c',
-    border: '1px solid #1f2b40',
+    background: ct.tooltipBg,
+    border: `1px solid ${ct.grid}`,
     borderRadius: 6,
     fontSize: 12,
   },
-  labelStyle: { color: '#8ba0bd' },
-}
+  labelStyle: { color: ct.tick },
+})
 const SERIES_COLORS = ['#14b8a6', '#f59e0b', '#ef4444', '#8ba0bd', '#7dd3fc']
 
 function ProofTag({ id, children }) {
@@ -89,6 +94,9 @@ function Ablation({ rows }) {
 }
 
 function Reliability({ reliability }) {
+  const ct = useChartTheme()
+  const AXIS = axisOf(ct)
+  const TIP = tipOf(ct)
   const heads = Object.keys(reliability || {})
   const [head, setHead] = useState(heads[0])
   const active = head && reliability[head] ? head : heads[0]
@@ -121,14 +129,14 @@ function Reliability({ reliability }) {
       <div className="min-h-0 flex-1 p-2">
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={{ top: 8, right: 14, bottom: 18, left: -10 }}>
-            <CartesianGrid stroke="#1f2b40" />
+            <CartesianGrid stroke={ct.grid} />
             <XAxis
               type="number"
               dataKey="x"
               domain={[0, 100]}
               {...AXIS}
               tickFormatter={(v) => `${v}%`}
-              label={{ value: 'Forecast probability', position: 'insideBottom', offset: -10, fill: '#5d738f', fontSize: 10 }}
+              label={{ value: 'Forecast probability', position: 'insideBottom', offset: -10, fill: ct.axis, fontSize: 10 }}
             />
             <YAxis
               type="number"
@@ -140,7 +148,7 @@ function Reliability({ reliability }) {
             <ZAxis type="number" dataKey="count" range={[40, 180]} />
             <Tooltip
               {...TIP}
-              cursor={{ stroke: '#1f2b40' }}
+              cursor={{ stroke: ct.grid }}
               formatter={(v, n) => [`${Number(v).toFixed(1)}%`, n === 'x' ? 'predicted' : 'observed']}
             />
             <ReferenceLine
@@ -162,6 +170,9 @@ function Reliability({ reliability }) {
 }
 
 function SkillVsLead({ rows }) {
+  const ct = useChartTheme()
+  const AXIS = axisOf(ct)
+  const TIP = tipOf(ct)
   const { data, models } = useMemo(() => {
     const byLead = new Map()
     const seen = new Set()
@@ -184,16 +195,16 @@ function SkillVsLead({ rows }) {
       <div className="min-h-0 flex-1 p-2">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 8, right: 16, bottom: 18, left: -12 }}>
-            <CartesianGrid stroke="#1f2b40" />
+            <CartesianGrid stroke={ct.grid} />
             <XAxis
               dataKey="lead_h"
               {...AXIS}
               tickFormatter={(v) => `${v} h`}
-              label={{ value: 'Lead time', position: 'insideBottom', offset: -10, fill: '#5d738f', fontSize: 10 }}
+              label={{ value: 'Lead time', position: 'insideBottom', offset: -10, fill: ct.axis, fontSize: 10 }}
             />
             <YAxis {...AXIS} domain={[0, 'auto']} />
             <Tooltip {...TIP} formatter={(v, n) => [num(v, 3), n]} labelFormatter={(v) => `Lead ${v} h`} />
-            <Legend verticalAlign="top" height={22} wrapperStyle={{ fontSize: 11, color: '#8ba0bd' }} />
+            <Legend verticalAlign="top" height={22} wrapperStyle={{ fontSize: 11, color: ct.tick }} />
             {models.map((m, i) => (
               <Line
                 isAnimationActive={false}

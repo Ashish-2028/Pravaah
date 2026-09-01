@@ -1,0 +1,12 @@
+{
+ "advisory_en": "NARAINA: flood probability 71% — risk level HIGH. Flagged at this risk level since 17:30 IST. About 53,424 residents are in the exposed area, with 5 hospital(s), 0 school(s) and 27.9 km of road. Main drivers: rainfall today, near an underpass, dense built-up. No pumping assets are mapped in this ward.",
+ "advisory_hi": "NARAINA: बाढ़ की संभावना 71% — जोखिम स्तर उच्च। 17:30 IST से यह वार्ड इसी जोखिम स्तर पर चिह्नित है। लगभग 53,424 निवासी प्रभावित क्षेत्र में हैं, जिनमें 5 अस्पताल, 0 विद्यालय और 27.9 किमी सड़क शामिल हैं। मुख्य कारण: आज की वर्षा, अंडरपास के पास, घना निर्मित क्षेत्र। इस वार्ड में कोई पंप दर्ज नहीं है।",
+ "actions": [
+  "Request pumping support for NARAINA — no pumps are mapped here",
+  "Confirm access routes to 5 hospital(s) remain passable",
+  "Barricade the underpass approaches — they flood first and trap vehicles"
+ ],
+ "source": "deterministic",
+ "generated": "2026-09-01T23:50Z",
+ "cached": true
+}

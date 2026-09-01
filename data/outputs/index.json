@@ -48,7 +48,10 @@
         "2200",
         "2300"
       ],
-      "wards": 289
+      "wards": 289,
+      "split": "val",
+      "imd_rain_mm": 150.7,
+      "peak_hour_utc": "0100"
     },
     {
       "id": "2018-07-26",
@@ -79,7 +82,10 @@
         "2200",
         "2300"
       ],
-      "wards": 289
+      "wards": 289,
+      "split": "train",
+      "imd_rain_mm": 129.4,
+      "peak_hour_utc": "1000"
     },
     {
       "id": "2021-08-21",
@@ -110,7 +116,10 @@
         "2200",
         "2300"
       ],
-      "wards": 289
+      "wards": 289,
+      "split": "train",
+      "imd_rain_mm": 114.7,
+      "peak_hour_utc": "0100"
     },
     {
       "id": "2023-07-08",
@@ -141,9 +150,13 @@
         "2200",
         "2300"
       ],
-      "wards": 289
+      "wards": 289,
+      "split": "train",
+      "imd_rain_mm": 109.2,
+      "peak_hour_utc": "0600"
     }
   ],
   "schema": 3,
-  "live_updated_utc": "2026-09-01T23:29:05.213662+00:00"
+  "split_note": "`split` names the model split each demo day falls in. The replay demonstrates the product; the skill numbers in /verify come from the held-out test year.",
+  "live_updated_utc": "2026-09-01T23:50:19.039778+00:00"
 }

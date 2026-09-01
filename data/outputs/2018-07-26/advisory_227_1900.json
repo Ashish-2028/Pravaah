@@ -1,0 +1,12 @@
+{
+ "advisory_en": "I.P EXTENTION: flood probability 56% — risk level WATCH. Flagged at this risk level since 05:30 IST. Highest probability so far at 15:30 IST. About 168,015 residents are in the exposed area, with 5 hospital(s), 9 school(s) and 81.4 km of road. Main drivers: near an underpass, rainfall today, dense built-up. No pumping assets are mapped in this ward.",
+ "advisory_hi": "I.P EXTENTION: बाढ़ की संभावना 56% — जोखिम स्तर निगरानी। 05:30 IST से यह वार्ड इसी जोखिम स्तर पर चिह्नित है। लगभग 168,015 निवासी प्रभावित क्षेत्र में हैं, जिनमें 5 अस्पताल, 9 विद्यालय और 81.4 किमी सड़क शामिल हैं। मुख्य कारण: अंडरपास के पास, आज की वर्षा, घना निर्मित क्षेत्र। इस वार्ड में कोई पंप दर्ज नहीं है।",
+ "actions": [
+  "Request pumping support for I.P EXTENTION — no pumps are mapped here",
+  "Confirm access routes to 5 hospital(s) remain passable",
+  "Barricade the underpass approaches — they flood first and trap vehicles"
+ ],
+ "source": "deterministic",
+ "generated": "2026-09-01T23:50Z",
+ "cached": true
+}

@@ -242,11 +242,41 @@ def main() -> int:
     for event in events:
         n = render_event(event, cells, exp, wards_geo, cube, booster, feat_names,
                          raincast, rainfuse, cfg, bands)
+        # SPLIT LABEL. Three of the four demo events fall in the TRAIN years,
+        # and "why are most of your demo days in train?" is an obvious and fair
+        # question. Answering it before it is asked is worth more than hiding
+        # it: the replay demonstrates the PRODUCT, while the skill claims in
+        # /verify come from the held-out test year. Label each event so the UI
+        # can show it and the presenter never has to be defensive.
+        from cube.grid import split_of
         index_events.append({"id": event["id"], "name": event["name"],
-                             "timestamps": event["demo_timestamps"], "wards": n})
+                             "timestamps": event["demo_timestamps"], "wards": n,
+                             "split": split_of(pd.Timestamp(event["id"])),
+                             "imd_rain_mm": event.get("imd_rain_mm"),
+                             "peak_hour_utc": event.get("peak_hour_utc")})
 
-    (OUTPUTS / "index.json").write_text(json.dumps(
-        {"events": index_events, "schema": 3}, indent=2))
+    # Preserve a live snapshot if one exists — scripts/live_update.py owns the
+    # "live" entry and runs on its own 15-minute cadence, so a precompute run
+    # must not silently delete it (an earlier single-event run did exactly that
+    # and truncated the index to one event).
+    idx_p = OUTPUTS / "index.json"
+    live_entry = None
+    if idx_p.exists():
+        try:
+            prev = json.loads(idx_p.read_text())
+            live_entry = next((e for e in prev.get("events", [])
+                               if e["id"] == "live"), None)
+        except json.JSONDecodeError:
+            pass
+    if live_entry and (OUTPUTS / "live" / "meta.json").exists():
+        index_events.insert(0, live_entry)
+
+    idx_p.write_text(json.dumps(
+        {"events": index_events, "schema": 3,
+         "split_note": ("`split` names the model split each demo day falls in. "
+                        "The replay demonstrates the product; the skill numbers "
+                        "in /verify come from the held-out test year.")},
+        indent=2))
     print(f"\n  -> {len(index_events)} events in {(OUTPUTS / 'index.json').relative_to(ROOT)}"
           f"  REAL MODEL OUTPUT")
     return 0
@@ -403,12 +433,17 @@ def render_event(event, cells, exp, wards_geo, cube, booster, feat_names,
             # saturates at 0.99 the moment the category has already been
             # exceeded. Say so in the provenance rather than let it pass as a
             # model number sitting next to RainFuse numbers from other events.
-            fc_src = ("observation ratio — RainFuse has no data for "
-                      f"{ev_id}; this is observed accumulation over the "
-                      "category, not a forecast")
-            fc_block = {str(thr["heavy"]): round(min(0.99, rmax / thr["heavy"]), 2),
-                        str(thr["very_heavy"]): round(min(0.99, rmax / thr["very_heavy"]), 2),
-                        str(thr["extremely_heavy"]): round(min(0.99, rmax / thr["extremely_heavy"]), 2)}
+            fc_src = (f"unavailable — RainFuse has no NWP inputs for {ev_id} "
+                      "(they begin 2021-06), so no 24 h forecast exists")
+            # EMIT NULL, not a ratio. min(0.99, observed/threshold) saturates
+            # at 0.99 the moment the category has ALREADY been exceeded — it
+            # renders hindsight as a 99% forecast, and it would sit on screen
+            # beside RainFuse's honest 0.013 from another event. A judge
+            # comparing those two is entitled to call the 0.99 fabricated.
+            # A blank that says "no forecast exists for this event" is a fact.
+            fc_block = {str(thr["heavy"]): None,
+                        str(thr["very_heavy"]): None,
+                        str(thr["extremely_heavy"]): None}
 
         (ev_dir / f"rain_grid_{stamp}.json").write_text(json.dumps({
             "kind": "nowcast", "lead_h": 3, "cells": cellsr,

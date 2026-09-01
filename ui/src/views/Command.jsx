@@ -1,15 +1,19 @@
 import { useMemo, useState } from 'react'
 import clsx from 'clsx'
-import { ShieldAlert } from 'lucide-react'
+import { AlertTriangle, ShieldAlert } from 'lucide-react'
 import KpiStrip from '../components/KpiStrip'
 import MapCanvas from '../components/MapCanvas'
+import RadarPanel from '../components/RadarPanel'
 import RankedList from '../components/RankedList'
 import AdvisoryDrawer from '../components/AdvisoryDrawer'
 import CapModal from '../components/CapModal'
+import { LiveBadge, RefreshButton, RefreshError } from '../components/LiveBadge'
+import { useLive } from '../lib/live'
+import { Prov, modelName } from '../components/Provenance'
 import { ErrorBox, Panel, Spinner } from '../components/ui'
-import { findWard, rankWards, useCityState, useWards } from '../lib/hooks'
+import { findWard, rankWards, useCityState, useRain, useWards } from '../lib/hooks'
 import { BAND_COLOR, compact, hhmm, pct, topDriver } from '../lib/format'
-import { useStore } from '../lib/store'
+import { selectLiveMissing, useStore } from '../lib/store'
 
 const LAYERS = [
   ['p_flood', 'Inundation prob.'],
@@ -55,23 +59,83 @@ export function BandSummary({ rows }) {
   )
 }
 
+/**
+ * COMMAND CENTER = LIVE NOW.
+ *
+ * This screen answers one question — what is happening in Delhi at this
+ * minute — and it carries the evidence for its own freshness: the snapshot
+ * age, a refresh that re-runs the pipeline, and the radar loop. It has no
+ * event picker and no transport controls; those belong to Replay and only to
+ * Replay, so that nothing here can be mistaken for an archive playback.
+ */
 export default function Command() {
   const { event, t, layer, setLayer, selectedWard, selectWard, advisoryOpen, openAdvisory, closeAdvisory } =
     useStore()
+  const liveMissing = useStore(selectLiveMissing)
+  const liveStatus = useLive((s) => s.status)
+  const events = useStore((s) => s.events)
   const wardsRes = useWards(event, t)
   const stateRes = useCityState(event, t)
+  // Fetched for its provenance block as much as for its cells: it is what
+  // lets the exceedance KPI state a threshold in millimetres instead of
+  // repeating a legacy field name.
+  const rainRes = useRain(event, t, 'nowcast', 3)
+  const prov = rainRes.data?.provenance || null
   const [capOpen, setCapOpen] = useState(false)
 
   const ranked = useMemo(() => rankWards(wardsRes.data), [wardsRes.data])
   const ward = useMemo(() => findWard(wardsRes.data, selectedWard), [wardsRes.data, selectedWard])
+  const eventName = events.find((e) => e.id === event)?.name
 
   return (
     <div className="relative flex h-full flex-col gap-2 overflow-hidden p-2">
-      <KpiStrip res={stateRes} />
+      {/* ------------------------------------------------- live status ribbon */}
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-dim">
+          Current conditions
+        </span>
+        <LiveBadge />
+        <RefreshButton label="Refresh live" />
+        <Prov className="ml-1" title="Every ward number on this screen comes from these models.">
+          {modelName(prov?.nowcast_source, 'RainCast-v0')} → FloodRisk-v0
+        </Prov>
+        <div className="ml-auto min-w-0 max-w-[54%]">
+          <RefreshError />
+        </div>
+      </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-[1fr_330px] gap-2">
+      {liveMissing && (
+        <div className="flex shrink-0 items-start gap-2 rounded-md border border-amber/40 bg-amber/10 px-2.5 py-1.5 text-[11px] leading-snug text-amber">
+          <AlertTriangle size={14} className="mt-px shrink-0" />
+          {/* Two different failures, said differently. "No snapshot at all" is
+              fixed by pressing refresh; "a snapshot exists but the catalogue
+              does not list it" is a server-side problem and pressing refresh
+              will not help, so we do not imply that it will. */}
+          {liveStatus?.available ? (
+            <div>
+              <span className="font-semibold">
+                A live snapshot exists ({liveStatus.updated_ist}) but the API is not serving it.{' '}
+              </span>
+              /api/events lists no <code>live</code> event, so it cannot be loaded. Showing{' '}
+              <span className="font-semibold">{eventName}</span> from the archive instead — every
+              number below is that historical event, not the current hour.
+            </div>
+          ) : (
+            <div>
+              <span className="font-semibold">No live snapshot yet. </span>
+              This screen is showing <span className="font-semibold">{eventName}</span> from the
+              archive so nothing is blank. Press “Refresh live” to run the pipeline — it takes about
+              30–40 seconds — and this banner will disappear.
+            </div>
+          )}
+        </div>
+      )}
+
+      <KpiStrip res={stateRes} provenance={prov} />
+
+      <div className="grid min-h-0 flex-1 grid-cols-[1fr_352px] gap-2">
         <Panel
-          title="Ward choropleth — Delhi NCR"
+          title={liveMissing ? 'Ward choropleth — archive fallback' : 'Ward choropleth — live now'}
           right={<LayerSwitch layer={layer} setLayer={setLayer} />}
           bodyClass="relative"
         >
@@ -87,15 +151,18 @@ export default function Command() {
               onSelectWard={selectWard}
               overlay={
                 <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-md border border-grid bg-panel/90 px-2.5 py-1.5 text-[10.5px] text-muted">
-                  Issued {hhmm(t)} UTC · {ranked.length} wards · local vector basemap, no tile
-                  server
+                  <div>
+                    Issued {hhmm(t)} UTC · {ranked.length} wards · local vector basemap, no tile
+                    server
+                  </div>
+                  <Prov className="mt-0.5">FloodRisk-v0 · per-ward inundation probability</Prov>
                 </div>
               }
             />
           )}
         </Panel>
 
-        <div className="grid min-h-0 grid-rows-[1fr_auto] gap-2">
+        <div className="grid min-h-0 grid-rows-[minmax(120px,1fr)_auto_auto] gap-2">
           <Panel
             title="Wards by risk"
             right={<span className="tabular text-[10px] text-dim">{ranked.length}</span>}
@@ -111,6 +178,10 @@ export default function Command() {
             ) : (
               <Spinner label="Ranking wards" />
             )}
+          </Panel>
+
+          <Panel title="Live radar — IMD Delhi DWR">
+            <RadarPanel height={190} />
           </Panel>
 
           <Panel title="Selected ward">

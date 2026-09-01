@@ -11,10 +11,12 @@ import {
   YAxis,
 } from 'recharts'
 import MapCanvas from '../components/MapCanvas'
+import ProvenancePanel, { Prov, modelName } from '../components/Provenance'
 import { ErrorBox, Panel, Spinner } from '../components/ui'
 import { useMetrics, useRain, useWards } from '../lib/hooks'
-import { hhmm, num, pct } from '../lib/format'
+import { hhmm, num, pct, thresholdLabel, thresholdTitle } from '../lib/format'
 import { useStore } from '../lib/store'
+import { useChartTheme } from '../lib/theme'
 
 const LEADS = [0.5, 1, 2, 3, 4, 6]
 
@@ -24,6 +26,15 @@ export default function Nowcast() {
   const rainRes = useRain(event, t, 'nowcast', Math.round(lead))
   const wardsRes = useWards(event, t)
   const metrics = useMetrics()
+  const ct = useChartTheme()
+
+  // THE THRESHOLDS COME FROM THE API, NOT FROM THE FIELD NAME.
+  // `p15`/`p50` are legacy contract keys; the fitted heads are 5 mm and 10 mm
+  // and the response says so in provenance.head_thresholds_mm. See
+  // lib/format.js for the full note on why this matters.
+  const prov = rainRes.data?.provenance || null
+  const label = (key) => thresholdLabel(prov, key)
+  const nowcastModel = modelName(prov?.nowcast_source, 'RainCast-v0')
 
   const points = useMemo(() => {
     if (!rainRes.data?.cells) return null
@@ -65,20 +76,18 @@ export default function Nowcast() {
         right={
           <div className="flex items-center gap-2">
             <div className="flex overflow-hidden rounded border border-grid">
-              {[
-                ['p15', 'P(>15 mm)'],
-                ['p50', 'P(>50 mm)'],
-              ].map(([k, label]) => (
+              {['p15', 'p50'].map((k) => (
                 <button
                   key={k}
                   type="button"
                   onClick={() => setThreshold(k)}
+                  title={thresholdTitle(prov, k)}
                   className={clsx(
                     'px-2.5 py-1 text-[11px]',
                     threshold === k ? 'bg-teal/20 font-semibold text-teal' : 'text-muted hover:text-ink',
                   )}
                 >
-                  {label}
+                  {label(k)}
                 </button>
               ))}
             </div>
@@ -95,18 +104,21 @@ export default function Nowcast() {
             wards={wardsRes.data}
             layer="p_flood"
             points={points}
-            pointLabel={threshold === 'p15' ? 'P(>15 mm)' : 'P(>50 mm)'}
+            pointLabel={label(threshold)}
             overlay={
               <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-md border border-grid bg-panel/90 px-2.5 py-1.5 text-[10.5px] text-muted">
-                {rainRes.data.kind} · lead {rainRes.data.lead_h} h · issued {hhmm(t)} UTC ·{' '}
-                {rainRes.data.cells?.length || 0} cells
+                <div>
+                  {rainRes.data.kind} · lead {rainRes.data.lead_h} h · issued {hhmm(t)} UTC ·{' '}
+                  {rainRes.data.cells?.length || 0} cells
+                </div>
+                <Prov className="mt-0.5">{nowcastModel} · {label(threshold)}</Prov>
               </div>
             }
           />
         )}
       </Panel>
 
-      <div className="grid min-h-0 grid-rows-[auto_auto_1fr] gap-2">
+      <div className="grid min-h-0 grid-rows-[auto_auto_auto_minmax(150px,1fr)] gap-2 overflow-y-auto">
         <Panel title="Lead stepper">
           <div className="p-3">
             <div className="flex flex-wrap gap-1">
@@ -137,7 +149,7 @@ export default function Nowcast() {
           {stats ? (
             <dl className="grid grid-cols-2 gap-x-3 gap-y-2 p-3 text-[11.5px]">
               {[
-                ['Max probability', pct(stats.max)],
+                [`Max ${label(threshold)}`, pct(stats.max)],
                 ['Mean probability', pct(stats.mean)],
                 ['Cells ≥ 50%', `${stats.hot} / ${stats.cells}`],
                 ['Peak q50', `${num(stats.q50, 1)} mm`],
@@ -152,6 +164,17 @@ export default function Nowcast() {
           ) : (
             <div className="p-3 text-xs text-muted">No grid loaded.</div>
           )}
+          {stats && (
+            <div className="border-t border-grid px-3 pb-2 pt-1.5">
+              <Prov title={thresholdTitle(prov, threshold)}>
+                {nowcastModel} · exceedance head &quot;{threshold}&quot;
+              </Prov>
+            </div>
+          )}
+        </Panel>
+
+        <Panel title="Where these numbers came from">
+          <ProvenancePanel provenance={prov} />
         </Panel>
 
         <Panel title="Skill vs lead — the honest decay" bodyClass="min-h-0">
@@ -159,22 +182,22 @@ export default function Nowcast() {
             <div className="absolute inset-0 p-1 pb-3">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={skill.data} margin={{ top: 10, right: 14, bottom: 4, left: -14 }}>
-                  <CartesianGrid stroke="#1f2b40" />
+                  <CartesianGrid stroke={ct.grid} />
                   <XAxis
                     dataKey="lead_h"
-                    stroke="#5d738f"
-                    tick={{ fontSize: 10, fill: '#8ba0bd' }}
+                    stroke={ct.axis}
+                    tick={{ fontSize: 10, fill: ct.tick }}
                     tickFormatter={(v) => `${v}h`}
                   />
-                  <YAxis stroke="#5d738f" tick={{ fontSize: 10, fill: '#8ba0bd' }} />
+                  <YAxis stroke={ct.axis} tick={{ fontSize: 10, fill: ct.tick }} />
                   <Tooltip
-                    contentStyle={{ background: '#111a2c', border: '1px solid #1f2b40', borderRadius: 6, fontSize: 12 }}
-                    labelStyle={{ color: '#8ba0bd' }}
+                    contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.grid}`, borderRadius: 6, fontSize: 12 }}
+                    labelStyle={{ color: ct.tick }}
                     formatter={(v, n) => [num(v, 3), n]}
                   />
                   <Legend verticalAlign="top" height={20} wrapperStyle={{ fontSize: 11 }} />
                   {skill.models.map((mm) => (
-                    <Line isAnimationActive={false} key={mm} type="monotone" dataKey={mm} stroke="#14b8a6" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line isAnimationActive={false} key={mm} type="monotone" dataKey={mm} stroke={ct.line} strokeWidth={2} dot={{ r: 3 }} />
                   ))}
                 </LineChart>
               </ResponsiveContainer>

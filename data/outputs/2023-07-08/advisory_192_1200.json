@@ -1,0 +1,12 @@
+{
+ "advisory_en": "GREATER KAILASH-I: flood probability 80% — risk level HIGH. Flagged at this risk level since 05:30 IST. Highest probability so far at 12:30 IST. About 110,817 residents are in the exposed area, with 21 hospital(s), 8 school(s) and 78.2 km of road. Main drivers: rainfall today, near an underpass, dense built-up. 2 pump(s) are mapped in this ward.",
+ "advisory_hi": "GREATER KAILASH-I: बाढ़ की संभावना 80% — जोखिम स्तर उच्च। 05:30 IST से यह वार्ड इसी जोखिम स्तर पर चिह्नित है। लगभग 110,817 निवासी प्रभावित क्षेत्र में हैं, जिनमें 21 अस्पताल, 8 विद्यालय और 78.2 किमी सड़क शामिल हैं। मुख्य कारण: आज की वर्षा, अंडरपास के पास, घना निर्मित क्षेत्र। इस वार्ड में 2 पंप उपलब्ध हैं।",
+ "actions": [
+  "Deploy the 2 mapped pump(s) to the lowest points of GREATER KAILASH-I",
+  "Confirm access routes to 21 hospital(s) remain passable",
+  "Barricade the underpass approaches — they flood first and trap vehicles"
+ ],
+ "source": "deterministic",
+ "generated": "2026-09-01T23:50Z",
+ "cached": true
+}

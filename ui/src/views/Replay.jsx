@@ -10,7 +10,7 @@ import { BandSummary, LayerSwitch } from './Command'
 import { findWard, rankWards, useCityState, useWards } from '../lib/hooks'
 import { prefetch } from '../lib/api'
 import { BAND_COLOR, compact, hhmm, pct, toIST } from '../lib/format'
-import { useStore } from '../lib/store'
+import { historicals, useStore } from '../lib/store'
 
 const SPEEDS = [
   [1400, '0.5×'],
@@ -19,23 +19,31 @@ const SPEEDS = [
   [180, '5×'],
 ]
 
+/**
+ * THE ONLY REPLAY SCREEN.
+ *
+ * The event picker and the transport bar live here and nowhere else. Every
+ * other view is LIVE NOW, so a judge can never be looking at a scrubbed
+ * historical frame while the header says live. The mode itself is set by the
+ * shell from the route — this component does not touch it.
+ *
+ * The dropdown lists HISTORICAL events only. The rolling `live` event has no
+ * business in a replay: its frames are rewritten under you every 15 minutes,
+ * which is the one thing a replay must never do.
+ */
 export default function Replay() {
   const {
     event, t, events, timestamps, setEvent, setT, layer, setLayer,
-    playing, setPlaying, speed, setSpeed, setMode,
+    playing, setPlaying, speed, setSpeed,
     selectedWard, selectWard, advisoryOpen, openAdvisory, closeAdvisory,
   } = useStore()
+  const archive = historicals(events)
 
   const wardsRes = useWards(event, t)
   const stateRes = useCityState(event, t)
   const ranked = useMemo(() => rankWards(wardsRes.data), [wardsRes.data])
   const ward = useMemo(() => findWard(wardsRes.data, selectedWard), [wardsRes.data, selectedWard])
   const idx = timestamps.indexOf(t)
-
-  // entering the replay view puts the shell clock into replay mode
-  useEffect(() => {
-    setMode('replay')
-  }, [setMode])
 
   // warm the next two frames so the step never stutters
   useEffect(() => {
@@ -70,12 +78,15 @@ export default function Replay() {
           onChange={(e) => setEvent(e.target.value)}
           className="rounded border border-grid bg-bg px-2 py-1.5 text-[12px] text-ink outline-none focus:border-teal"
         >
-          {events.map((ev) => (
+          {archive.map((ev) => (
             <option key={ev.id} value={ev.id}>
-              {ev.name} · {ev.wards} wards
+              {ev.name} · {ev.wards} wards · {ev.timestamps.length} frames
             </option>
           ))}
         </select>
+        <span className="text-[10px] uppercase tracking-wider text-dim">
+          {archive.length} archived events · live excluded
+        </span>
 
         <div className="flex items-center gap-1">
           <button

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from './api'
+import { useLive } from './live'
+import { useStore } from './store'
 
 /**
  * Generic async resource hook.
@@ -44,17 +46,57 @@ export function useResource(fn, deps, { enabled = true } = {}) {
   return { ...state, reload }
 }
 
+/**
+ * The live pump bumps `dataNonce` after it has dropped the cached live
+ * responses. Carrying it here — rather than in each caller — is what makes
+ * every panel in the app refetch together when the snapshot moves, without a
+ * single view knowing that "live" exists.
+ */
+function useDataNonce() {
+  return useStore((s) => s.dataNonce)
+}
+
 export function useWards(event, t) {
-  return useResource(() => api.wards(event, t), [event, t], { enabled: Boolean(event && t) })
+  const nonce = useDataNonce()
+  return useResource(() => api.wards(event, t), [event, t, nonce], {
+    enabled: Boolean(event && t),
+  })
 }
 
 export function useCityState(event, t) {
-  return useResource(() => api.state(event, t), [event, t], { enabled: Boolean(event && t) })
+  const nonce = useDataNonce()
+  return useResource(() => api.state(event, t), [event, t, nonce], {
+    enabled: Boolean(event && t),
+  })
 }
 
 export function useRain(event, t, kind = 'nowcast', lead) {
-  return useResource(() => api.rain(event, t, kind, lead), [event, t, kind, lead], {
+  const nonce = useDataNonce()
+  return useResource(() => api.rain(event, t, kind, lead), [event, t, kind, lead, nonce], {
     enabled: Boolean(event && t),
+  })
+}
+
+/**
+ * IMD Delhi DWR captures written by the live pipeline.
+ *
+ * A missing manifest is the NORMAL state before the first live run, so this
+ * resolves to null rather than erroring — the panel says so in words.
+ *
+ * Keyed on the live snapshot's timestamp, NOT on dataNonce: the captures only
+ * change when the pipeline runs, and re-requesting a manifest that is not
+ * there yet once a minute would paint the console red with 404s for a file
+ * whose absence is a normal state.
+ */
+export function useRadarManifest() {
+  const updated = useLive((s) => s.status?.updated_utc || null)
+  // Not requested at all until a live snapshot is known to exist: the same
+  // pipeline run writes the snapshot and the captures, so before the first run
+  // there is provably nothing to fetch. Net effect on a cold repo: ONE 404 per
+  // pipeline run instead of one per minute, and none at all once the pipeline
+  // has written /static/live/frames/manifest.json.
+  return useResource(() => api.radarManifest().catch(() => null), [updated], {
+    enabled: Boolean(updated),
   })
 }
 

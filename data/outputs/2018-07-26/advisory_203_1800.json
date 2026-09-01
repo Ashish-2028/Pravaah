@@ -1,0 +1,12 @@
+{
+ "advisory_en": "BADAR PUR: flood probability 71% — risk level HIGH. Flagged at this risk level since 05:30 IST. Highest probability so far at 16:30 IST. About 65,533 residents are in the exposed area, with 0 hospital(s), 2 school(s) and 42.3 km of road. Main drivers: near an underpass, rainfall today, dense built-up. 1 pump(s) are mapped in this ward.",
+ "advisory_hi": "BADAR PUR: बाढ़ की संभावना 71% — जोखिम स्तर उच्च। 05:30 IST से यह वार्ड इसी जोखिम स्तर पर चिह्नित है। लगभग 65,533 निवासी प्रभावित क्षेत्र में हैं, जिनमें 0 अस्पताल, 2 विद्यालय और 42.3 किमी सड़क शामिल हैं। मुख्य कारण: अंडरपास के पास, आज की वर्षा, घना निर्मित क्षेत्र। इस वार्ड में 1 पंप उपलब्ध हैं।",
+ "actions": [
+  "Deploy the 1 mapped pump(s) to the lowest points of BADAR PUR",
+  "Pre-position medical access for 65,533 residents",
+  "Barricade the underpass approaches — they flood first and trap vehicles"
+ ],
+ "source": "deterministic",
+ "generated": "2026-09-01T23:50Z",
+ "cached": true
+}
