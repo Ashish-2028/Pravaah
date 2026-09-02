@@ -34,7 +34,7 @@ export default function Inundation() {
 
   return (
     <div className="relative grid h-full grid-cols-[280px_1fr_360px] gap-2 overflow-hidden p-2">
-      <div className="grid min-h-0 grid-rows-[auto_1fr] gap-2">
+      <div className="grid min-h-0 grid-rows-[auto_minmax(200px,1fr)] gap-2 overflow-y-auto overflow-x-hidden pr-0.5">
         <Panel
           title="Exposure at high + critical"
           right={<Prov>counted, not modelled</Prov>}

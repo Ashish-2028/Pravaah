@@ -162,7 +162,11 @@ export default function Command() {
           )}
         </Panel>
 
-        <div className="grid min-h-0 grid-rows-[minmax(120px,1fr)_auto_auto] gap-2">
+        {/* The rail scrolls rather than compressing. Radar (≈250 px) plus the
+            selected-ward card plus a ward list does not fit a laptop viewport,
+            and without this the third card simply overflowed the column and sat
+            on top of whatever the next panel was. */}
+        <div className="grid min-h-0 grid-rows-[minmax(180px,1fr)_auto_auto] gap-2 overflow-y-auto overflow-x-hidden pr-0.5">
           <Panel
             title="Wards by risk"
             right={<span className="tabular text-[10px] text-dim">{ranked.length}</span>}

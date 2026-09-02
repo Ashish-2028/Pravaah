@@ -1,9 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import {
   CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
   ReferenceLine,
   ResponsiveContainer,
   Scatter,
@@ -13,6 +10,7 @@ import {
   YAxis,
   ZAxis,
 } from 'recharts'
+import SkillChart from '../components/SkillChart'
 import { ErrorBox, Panel, Spinner } from '../components/ui'
 import { useMetrics } from '../lib/hooks'
 import { num } from '../lib/format'
@@ -32,7 +30,6 @@ const tipOf = (ct) => ({
   },
   labelStyle: { color: ct.tick },
 })
-const SERIES_COLORS = ['#14b8a6', '#f59e0b', '#ef4444', '#8ba0bd', '#7dd3fc']
 
 function ProofTag({ id, children }) {
   return (
@@ -51,8 +48,8 @@ function Ablation({ rows }) {
   if (!rows?.length) return <div className="p-4 text-sm text-muted">No ablation rows.</div>
   const best = rows.reduce((a, b) => (b.csi > a.csi ? b : a), rows[0])
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-[12.5px]">
+    <div className="max-h-[46vh] overflow-auto">
+      <table className="w-full min-w-[420px] text-[12.5px]">
         <thead>
           <tr className="border-b border-grid text-left text-[10px] uppercase tracking-wider text-muted">
             <th className="px-3 py-2 font-semibold">Configuration</th>
@@ -108,25 +105,29 @@ function Reliability({ reliability }) {
 
   return (
     <div className="absolute inset-0 flex flex-col">
+      {/* Fourteen heads. As a button strip they wrapped into four rows and ate
+          the plot; as a select they are one row at any panel width. */}
       {heads.length > 1 && (
-        <div className="flex gap-1 px-3 pt-2">
-          {heads.map((h) => (
-            <button
-              key={h}
-              type="button"
-              onClick={() => setHead(h)}
-              className={
-                h === active
-                  ? 'rounded border border-teal/50 bg-teal/15 px-2 py-0.5 text-[10.5px] text-teal'
-                  : 'rounded border border-grid px-2 py-0.5 text-[10.5px] text-muted hover:text-ink'
-              }
-            >
-              {h}
-            </button>
-          ))}
+        <div className="flex shrink-0 items-center gap-2 px-3 pb-1 pt-2">
+          <label className="text-[9.5px] uppercase tracking-[0.14em] text-dim" htmlFor="rel-head">
+            Head
+          </label>
+          <select
+            id="rel-head"
+            value={active}
+            onChange={(e) => setHead(e.target.value)}
+            className="min-w-0 max-w-[260px] flex-1 rounded border border-grid bg-bg px-1.5 py-0.5 text-[11px] text-ink outline-none focus:border-teal"
+          >
+            {heads.map((h) => (
+              <option key={h} value={h}>
+                {h}
+              </option>
+            ))}
+          </select>
+          <span className="tabular shrink-0 text-[10px] text-dim">{points.length} bins</span>
         </div>
       )}
-      <div className="min-h-0 flex-1 p-2">
+      <div className="min-h-0 flex-1 p-2 pt-0">
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={{ top: 8, right: 14, bottom: 18, left: -10 }}>
             <CartesianGrid stroke={ct.grid} />
@@ -169,70 +170,12 @@ function Reliability({ reliability }) {
   )
 }
 
-function SkillVsLead({ rows }) {
-  const ct = useChartTheme()
-  const AXIS = axisOf(ct)
-  const TIP = tipOf(ct)
-  const { data, models } = useMemo(() => {
-    const byLead = new Map()
-    const seen = new Set()
-    ;(rows || []).forEach((r) => {
-      seen.add(r.model)
-      const cur = byLead.get(r.lead_h) || { lead_h: r.lead_h }
-      cur[r.model] = r.csi
-      byLead.set(r.lead_h, cur)
-    })
-    return {
-      data: [...byLead.values()].sort((a, b) => a.lead_h - b.lead_h),
-      models: [...seen],
-    }
-  }, [rows])
-
-  if (!data.length) return <div className="p-4 text-sm text-muted">No skill curve.</div>
-
-  return (
-    <div className="absolute inset-0 flex flex-col">
-      <div className="min-h-0 flex-1 p-2">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 8, right: 16, bottom: 18, left: -12 }}>
-            <CartesianGrid stroke={ct.grid} />
-            <XAxis
-              dataKey="lead_h"
-              {...AXIS}
-              tickFormatter={(v) => `${v} h`}
-              label={{ value: 'Lead time', position: 'insideBottom', offset: -10, fill: ct.axis, fontSize: 10 }}
-            />
-            <YAxis {...AXIS} domain={[0, 'auto']} />
-            <Tooltip {...TIP} formatter={(v, n) => [num(v, 3), n]} labelFormatter={(v) => `Lead ${v} h`} />
-            <Legend verticalAlign="top" height={22} wrapperStyle={{ fontSize: 11, color: ct.tick }} />
-            {models.map((m, i) => (
-              <Line
-                isAnimationActive={false}
-                key={m}
-                type="monotone"
-                dataKey={m}
-                name={m}
-                stroke={SERIES_COLORS[i % SERIES_COLORS.length]}
-                strokeWidth={2}
-                dot={{ r: 3 }}
-              />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-      <p className="px-3 pb-2 text-[10.5px] leading-relaxed text-dim">
-        The honest decay. Nowcast skill falls away after roughly 2 h — we publish the curve rather
-        than a single headline number.
-      </p>
-    </div>
-  )
-}
 
 function LeadTime({ rows }) {
   if (!rows?.length) return <div className="p-4 text-sm text-muted">No lead-time comparison.</div>
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-[12.5px]">
+    <div className="max-h-[46vh] overflow-auto">
+      <table className="w-full min-w-[420px] text-[12.5px]">
         <thead>
           <tr className="border-b border-grid text-left text-[10px] uppercase tracking-wider text-muted">
             <th className="px-3 py-2 font-semibold">Event</th>
@@ -305,14 +248,19 @@ export default function Verify() {
 
         <Panel
           title={<ProofTag id="P-2">Reliability diagram</ProofTag>}
-          className="min-h-[340px]"
+          className="min-h-[380px]"
           bodyClass="min-h-0"
         >
           <Reliability reliability={m.reliability} />
         </Panel>
 
-        <Panel title="Skill vs lead time" className="min-h-[340px]" bodyClass="min-h-0">
-          <SkillVsLead rows={m.skill_vs_lead} />
+        <Panel title="Skill vs lead time" className="min-h-[380px]" bodyClass="min-h-0">
+          <SkillChart
+            rows={m.skill_vs_lead}
+            footnote="The honest decay, one exceedance head at a time: the model against the
+              persistence and raw-NWP baselines it has to beat. Nowcast skill falls away after
+              roughly 2 h — we publish the curve rather than a single headline number."
+          />
         </Panel>
       </div>
 

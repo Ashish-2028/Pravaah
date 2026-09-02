@@ -80,24 +80,33 @@ export function useRain(event, t, kind = 'nowcast', lead) {
 /**
  * IMD Delhi DWR captures written by the live pipeline.
  *
- * A missing manifest is the NORMAL state before the first live run, so this
- * resolves to null rather than erroring — the panel says so in words.
+ * FETCHED ON FIRST PAINT, UNCONDITIONALLY. It used to be gated on
+ * `enabled: Boolean(updated)` — i.e. it would not ask for the manifest until
+ * /api/live/status had come back with a snapshot timestamp. The reasoning was
+ * that the same pipeline run writes both, so before the first run there is
+ * provably nothing to fetch and the gate saves a 404.
  *
- * Keyed on the live snapshot's timestamp, NOT on dataNonce: the captures only
- * change when the pipeline runs, and re-requesting a manifest that is not
- * there yet once a minute would paint the console red with 404s for a file
- * whose absence is a normal state.
+ * That reasoning is wrong in the one case that matters. The frames are written
+ * to disk and served off the static mount; they OUTLIVE the API's notion of a
+ * live snapshot, so a repo with 72 captures already on disk and a status
+ * endpoint that reports nothing yet (or is slow, or has been restarted) showed
+ * an empty radar panel with "no captures on disk yet" — a message that was
+ * simply false. Worse, the gate is invisible: `enabled: false` leaves
+ * `loading: false, data: null`, which the panel could not tell apart from a
+ * real 404.
+ *
+ * So: ask immediately, and keep the status timestamp only as a REFRESH key, so
+ * a completed pipeline run pulls the new frame list in. Cost on a cold repo is
+ * one 404 at mount plus one per pipeline run — a fair price for a panel that is
+ * never wrong about what is on disk.
+ *
+ * The error is NOT swallowed here (it used to be `.catch(() => null)`). The
+ * panel needs to distinguish "still loading", "genuinely 404" and "the fetch
+ * failed", and it can only do that if the failure reaches it.
  */
 export function useRadarManifest() {
   const updated = useLive((s) => s.status?.updated_utc || null)
-  // Not requested at all until a live snapshot is known to exist: the same
-  // pipeline run writes the snapshot and the captures, so before the first run
-  // there is provably nothing to fetch. Net effect on a cold repo: ONE 404 per
-  // pipeline run instead of one per minute, and none at all once the pipeline
-  // has written /static/live/frames/manifest.json.
-  return useResource(() => api.radarManifest().catch(() => null), [updated], {
-    enabled: Boolean(updated),
-  })
+  return useResource(() => api.radarManifest(), [updated])
 }
 
 export function useMetrics() {

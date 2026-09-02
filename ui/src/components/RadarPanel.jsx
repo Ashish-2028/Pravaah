@@ -103,18 +103,51 @@ export default function RadarPanel({ className, height = 260 }) {
     })
   }, [srcKey])
 
-  if (res.loading && !manifest) return <Spinner label="Loading radar captures" />
+  // THREE STATES, SAID APART. This panel used to conflate them: the manifest
+  // hook was gated behind the live-status poll, so "we have not asked yet" was
+  // rendered as "there are no captures on disk", which is a claim about the
+  // filesystem the UI had not checked. Now the request goes out on mount and
+  // each outcome gets its own words.
+  //
+  //   still in flight  -> a spinner, so the panel is never silently empty
+  //   404 / no file    -> the "nothing captured yet" copy, which is now TRUE
+  //   any other error  -> say what broke and offer the retry
+  if (res.loading && !manifest) {
+    return (
+      <div className={clsx('flex min-h-0 flex-col', className)} style={{ minHeight: height }}>
+        <Spinner label="Loading radar captures" />
+      </div>
+    )
+  }
 
   if (!products.length) {
+    const missing = !manifest && /(^|\s)404(\s|$)|not found/i.test(String(res.error || ''))
+    const failed = Boolean(res.error) && !missing
     return (
       <div className={clsx('p-3 text-[11px] leading-relaxed text-muted', className)}>
         <div className="flex items-center gap-1.5 text-dim">
-          <Radar size={13} /> No radar captures on disk yet.
+          <Radar size={13} />
+          {failed
+            ? 'Could not read the radar manifest.'
+            : manifest
+              ? 'The manifest lists no usable frames.'
+              : 'No radar captures on disk yet.'}
         </div>
-        <p className="mt-1.5">
-          The live pipeline writes IMD Delhi DWR frames to {BASE}. Run a live refresh, or wait for
-          the next 15-minute cycle, and the loop appears here. Nothing in this UI depends on it.
-        </p>
+        {failed ? (
+          <p className="mt-1.5 break-words text-amber">{String(res.error)}</p>
+        ) : (
+          <p className="mt-1.5">
+            The live pipeline writes IMD Delhi DWR frames to {BASE}. Run a live refresh, or wait for
+            the next 15-minute cycle, and the loop appears here. Nothing in this UI depends on it.
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={res.reload}
+          className="mt-2 rounded border border-grid px-2 py-1 text-[10.5px] text-muted hover:text-ink"
+        >
+          Check again
+        </button>
       </div>
     )
   }

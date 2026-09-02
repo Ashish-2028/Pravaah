@@ -208,7 +208,7 @@ export default function Replay() {
           )}
         </Panel>
 
-        <div className="grid min-h-0 grid-rows-[1fr_auto] gap-2">
+        <div className="grid min-h-0 grid-rows-[minmax(180px,1fr)_auto] gap-2 overflow-y-auto overflow-x-hidden pr-0.5">
           <Panel title="Wards by risk" bodyClass="min-h-0">
             {wardsRes.data ? (
               <RankedList rows={ranked} selectedWard={selectedWard} onSelect={selectWard} limit={60} />

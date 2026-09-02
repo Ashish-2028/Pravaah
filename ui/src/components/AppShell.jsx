@@ -14,7 +14,7 @@ import {
 import { BADGE_COLOR, hhmm, toIST } from '../lib/format'
 import { useHealth } from '../lib/hooks'
 import { useLivePump } from '../lib/live'
-import { useStore } from '../lib/store'
+import { ARCHIVE_SELECT_ROUTES, useStore } from '../lib/store'
 import { useTheme } from '../lib/theme'
 import { LiveBadge, RefreshButton } from './LiveBadge'
 
@@ -124,17 +124,31 @@ function ModeToggle() {
 }
 
 function Clock() {
-  const t = useStore((s) => s.t)
+  const liveT = useStore((s) => s.t)
+  const archiveEvent = useStore((s) => s.archiveEvent)
+  const archiveT = useStore((s) => s.archiveT)
   const mode = useStore((s) => s.mode)
+  const { pathname } = useLocation()
+
+  // The header clock must show the hour the panels below it are actually
+  // rendering. On a Nowcast/Forecast pinned to a past storm that is the
+  // archive hour, not the live one.
+  const archiveHere = Boolean(archiveEvent) && ARCHIVE_SELECT_ROUTES.includes(pathname)
+  const t = archiveHere ? archiveT : liveT
   return (
-    <div className="flex items-baseline gap-2 rounded border border-grid bg-panel px-2.5 py-1">
+    <div
+      className={clsx(
+        'flex items-baseline gap-2 rounded border bg-panel px-2.5 py-1',
+        archiveHere ? 'border-amber/50' : 'border-grid',
+      )}
+    >
       <span className="tabular text-lg font-semibold leading-none text-ink">{hhmm(t)}</span>
       <span className="text-[10px] uppercase tracking-wider text-muted">UTC</span>
       <span className="tabular text-sm leading-none text-teal">{toIST(t)}</span>
       <span className="text-[10px] uppercase tracking-wider text-muted">IST</span>
-      {mode === 'replay' && (
+      {(mode === 'replay' || archiveHere) && (
         <span className="ml-1 rounded bg-amber/20 px-1 text-[9px] font-bold uppercase tracking-wider text-amber">
-          replay
+          {mode === 'replay' ? 'replay' : 'archive'}
         </span>
       )}
     </div>
@@ -168,8 +182,16 @@ export default function AppShell({ children }) {
   const event = useStore((s) => s.event)
   const mode = useStore((s) => s.mode)
   const setMode = useStore((s) => s.setMode)
+  const archiveEvent = useStore((s) => s.archiveEvent)
   const location = useLocation()
-  const eventName = events.find((e) => e.id === event)?.name
+
+  // Nowcast and Forecast can be pinned to a past event by their own selector.
+  // The header must not keep saying LIVE NOW over a 2021 storm, so it reads
+  // the override on exactly the routes that expose it.
+  const archiveHere = Boolean(archiveEvent) && ARCHIVE_SELECT_ROUTES.includes(location.pathname)
+  const shownEvent = archiveHere ? archiveEvent : event
+  const eventName = events.find((e) => e.id === shownEvent)?.name
+  const modeLabel = mode === 'replay' ? 'archive replay' : archiveHere ? 'archive' : 'live now'
 
   // Route -> mode. The single writer of `mode` in the whole app.
   useEffect(() => {
@@ -241,8 +263,13 @@ export default function AppShell({ children }) {
           <div className="min-w-0">
             <div className="text-sm font-semibold leading-tight text-ink">
               Delhi NCR
-              <span className="ml-2 text-[10px] font-semibold uppercase tracking-wider text-dim">
-                {mode === 'replay' ? 'archive replay' : 'live now'}
+              <span
+                className={clsx(
+                  'ml-2 rounded px-1 text-[10px] font-semibold uppercase tracking-wider',
+                  archiveHere ? 'bg-amber/20 text-amber' : 'text-dim',
+                )}
+              >
+                {modeLabel}
               </span>
             </div>
             <div className="truncate text-[11px] text-muted">

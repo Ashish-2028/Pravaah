@@ -28,11 +28,20 @@ export const historicals = (events) => events.filter((e) => e.id !== LIVE_EVENT)
  * driven by the route (AppShell): /replay is REPLAY, everything else is LIVE.
  * That is what keeps a play loop from ever running underneath a live screen.
  */
+/** The routes that carry the compact archive event selector. They stay LIVE
+ *  screens by default; the selector is an explicit, per-view override. */
+export const ARCHIVE_SELECT_ROUTES = ['/nowcast', '/forecast']
+
+/** Peak hour the catalogue declares for an event, when it declares one. */
+export const peakHourOf = (events, id) =>
+  events.find((e) => e.id === id)?.peak_hour_utc || null
+
 export const useStore = create((set, get) => ({
   event: null,
   t: null, // null until the event catalogue loads, then a real "HHMM"
   timestamps: [],
   events: [],
+  splitNote: null, // /api/events explains what `split` means; we quote it verbatim
 
   mode: 'live', // 'live' | 'replay'
   liveEvent: null, // id of the live event, or null when the pipeline has never run
@@ -44,6 +53,44 @@ export const useStore = create((set, get) => ({
    *  carry it in their dependency list, which is what turns a silent cache
    *  invalidation into a visible refetch. */
   dataNonce: 0,
+
+  /**
+   * ------------------------------------------------------ archive override
+   *
+   * Nowcast and Forecast are LIVE screens and stay LIVE screens: this pair
+   * does NOT touch `mode`, `event` or `t`. Writing the shared clock is what
+   * started the two-clocks-fighting problem that removed the transport
+   * controls from these views in the first place, and none of that comes
+   * back — there is no play loop, no auto-advance, no timer here.
+   *
+   *   archiveEvent === null -> LIVE, verbatim. The shared clock, the live
+   *                            pump, the live badge, all unchanged.
+   *   archiveEvent !== null -> one frozen (historical event, hour) pair that
+   *                            only the two selector views read, so a judge
+   *                            on Command or Inundation still sees live.
+   *
+   * It survives a hop between Nowcast and Forecast on purpose — a presenter
+   * picks the storm once and then walks both models through it.
+   */
+  archiveEvent: null,
+  archiveT: null,
+
+  /** `id` = null restores LIVE. Otherwise jump straight to the catalogue's
+   *  declared peak hour, because that is the frame worth showing. */
+  setArchiveEvent: (id) => {
+    if (!id) {
+      set({ archiveEvent: null, archiveT: null })
+      return
+    }
+    const { events } = get()
+    const stamps = stampsOf(events, id)
+    const peak = peakHourOf(events, id)
+    set({
+      archiveEvent: id,
+      archiveT: (peak && stamps.includes(peak) ? peak : null) || lastOf(stamps),
+    })
+  },
+  setArchiveT: (archiveT) => set({ archiveT }),
 
   lead: 3, // hours, for the nowcast/forecast views
   layer: 'p_flood', // 'p_flood' | 'risk_score' | 'exposure'
@@ -73,12 +120,31 @@ export const useStore = create((set, get) => ({
     const liveId = live ? live.id : fallback
     const liveStamps = stampsOf(events, liveId)
 
+    // The archive override is pruned, never silently re-pointed: if the event
+    // it names has left the catalogue we fall back to LIVE rather than show a
+    // different storm under the same label.
+    const archiveEvent =
+      s.archiveEvent && events.some((e) => e.id === s.archiveEvent) && s.archiveEvent !== LIVE_EVENT
+        ? s.archiveEvent
+        : null
+    const archiveStamps = archiveEvent ? stampsOf(events, archiveEvent) : []
+    const archiveT = archiveEvent
+      ? (s.archiveT && archiveStamps.includes(s.archiveT) ? s.archiveT : null) ||
+        (peakHourOf(events, archiveEvent) && archiveStamps.includes(peakHourOf(events, archiveEvent))
+          ? peakHourOf(events, archiveEvent)
+          : null) ||
+        lastOf(archiveStamps)
+      : null
+
     const next = {
       events,
+      splitNote: payload.split_note || null,
       liveEvent: live ? live.id : null,
       liveFallback: fallback,
       replayEvent,
       replayT,
+      archiveEvent,
+      archiveT,
     }
     if (s.mode === 'replay') {
       Object.assign(next, { event: replayEvent, t: replayT, timestamps: replayStamps })

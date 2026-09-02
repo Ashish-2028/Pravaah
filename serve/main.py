@@ -26,6 +26,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse, Response
+from pydantic import BaseModel
 
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUTS = Path(os.getenv("PRAVAAH_OUTPUTS", ROOT / "data" / "outputs"))
@@ -336,6 +337,69 @@ def live_refresh() -> dict:
     _REFRESH["started"] = datetime.now(timezone.utc).isoformat()
     threading.Thread(target=run, daemon=True).start()
     return {"started": True, "poll": "/api/live/status"}
+
+
+class ChatRequest(BaseModel):
+    question: str
+    event: str = "live"
+    t: str | None = None
+    ward_id: str | None = None
+
+
+@app.post("/api/chat")
+def chat(req: ChatRequest) -> dict:
+    """
+    Grounded Q&A for a duty officer.
+
+    The model receives ONLY a context we assemble from precomputed artefacts —
+    the selected ward, city KPIs, measured model skill and the project's stated
+    limits. It has no web access and no other data. Every number it writes is
+    checked against that context and the reply is REJECTED if it invents one;
+    with no key or on any failure it falls back to a deterministic answer built
+    from the same context, so this endpoint cannot fail and cannot fabricate.
+    """
+    from serve import chat as chatmod
+
+    ts = _resolve_t(req.event, req.t)
+    kpi = ward = None
+    ranking = []
+    try:
+        kpi = _read(OUTPUTS / req.event / f"kpi_{ts}.json")
+    except HTTPException:
+        pass
+    try:
+        fc = _read(OUTPUTS / req.event / f"wards_{ts}.geojson")
+        props = [f["properties"] for f in fc["features"]]
+        ranking = [{"name": p["name"], "p_flood": p["p_flood"],
+                    "risk_band": p["risk_band"], "people": p["people"]}
+                   for p in sorted(props, key=lambda x: -x["risk_score"])[:8]]
+        if req.ward_id:
+            ward = next((p for p in props if p["ward_id"] == req.ward_id), None)
+    except HTTPException:
+        pass
+    metrics = None
+    mp = REPORTS / "metrics.json"
+    if mp.exists():
+        try:
+            metrics = json.loads(mp.read_text())
+        except json.JSONDecodeError:
+            pass
+
+    ctx = chatmod.build_context(ward, kpi, req.event, ts, metrics, ranking)
+    result = chatmod.ask(req.question, ctx)
+    return {**result, "event": req.event, "t": ts,
+            "ward": ward["name"] if ward else None}
+
+
+@app.get("/api/chat/status")
+def chat_status() -> dict:
+    """Is the language model configured? The UI labels the answer accordingly."""
+    from serve import chat as chatmod
+    return {"llm_available": chatmod._key() is not None,
+            "model": chatmod.MODEL,
+            "note": ("Answers are grounded on precomputed model output only. "
+                     "Numbers are verified against that context and the reply "
+                     "is rejected if the model invents one.")}
 
 
 @app.get("/api/verify/metrics")

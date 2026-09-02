@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Map as MapLibreMap, NavigationControl } from 'maplibre-gl'
 import { BAND_COLOR, compact, pct } from '../lib/format'
 import { LAYER_COUNT, TOGGLES, getPrefs, loadAll, loadedCount, setPref } from '../lib/basemap'
+import { buildRainField } from '../lib/rainfield'
 import { MAP_THEME, rampGradient, useTheme } from '../lib/theme'
 
 // DO NOT call setWorkerUrl() here. It was tried and it silently breaks the map.
@@ -391,7 +392,11 @@ const STACK = [
   'bm-schools',
   'bm-hospitals',
   'bm-pumps',
-  'rain-cells',
+  // The interpolated rain surface (lib/rainfield.js). It sits ABOVE the ward
+  // fill because a translucent raster under an 0.82-opacity choropleth is
+  // invisible; it is allowed to sit there only because its own alpha is zero
+  // wherever the field is quiet, so the choropleth is never blanketed.
+  'rain-field',
   // Above everything except the selection outline: these are the landmarks the
   // presenter names aloud, so nothing is allowed to bury them.
   'bm-blackspots-ring',
@@ -824,8 +829,10 @@ export default function MapCanvas({
           ['wards-line', 'line-color', mc.wardLine],
           ['wards-critical', 'line-color', mc.wardCritical],
           ['wards-selected', 'line-color', mc.wardSelected],
-          ['rain-cells', 'circle-stroke-color', mc.ground],
-          ['rain-cells', 'circle-color', ['interpolate', ['linear'], ['get', 'value'], ...mc.ramp]],
+          // No rain entry here: the rain surface is a raster, so its palette
+          // cannot be re-applied as a paint property. It is rebuilt from the
+          // new ramp instead — see the buildRainField memo below, which takes
+          // `mc` as a dependency.
         ]
         solid.forEach(([id, prop, value]) => {
           if (map.getLayer(id)) map.setPaintProperty(id, prop, value)
@@ -880,52 +887,59 @@ export default function MapCanvas({
     return () => clearInterval(id)
   }, [ready])
 
-  // optional rain-grid point overlay
-  const pointData = useMemo(() => {
-    if (!points) return null
-    return {
-      type: 'FeatureCollection',
-      features: points.map((p) => ({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
-        properties: { value: p.value },
-      })),
-    }
-  }, [points])
+  // -------------------------------------------------------- rain surface
+  //
+  // Was 56 translucent circles on an 0.1° lattice, which looked like a punch
+  // card laid over Delhi. It is now one interpolated raster — see
+  // lib/rainfield.js for the interpolation, the colour rule and the alpha rule.
+  //
+  // Depends on `mc` as well as `points`: a raster carries its palette in its
+  // pixels, so a theme flip has to rebuild the image rather than set a paint
+  // property. The build is a few milliseconds on a 230 × 180 canvas and only
+  // runs when the grid or the theme actually changes.
+  const field = useMemo(() => buildRainField(points, mc.ramp), [points, mc])
 
   useEffect(() => {
     const map = mapRef.current
     if (!map || !ready) return
-    if (!pointData) {
+    if (!field) {
       safe(map, () => {
-        if (map.getLayer('rain-cells')) map.removeLayer('rain-cells')
+        if (map.getLayer('rain-field')) map.removeLayer('rain-field')
         if (map.getSource('rain')) map.removeSource('rain')
-      })
+      }, 'rain field teardown')
       return
     }
     if (!map.getSource('rain')) {
       safe(map, () => {
-        map.addSource('rain', { type: 'geojson', data: pointData })
+        map.addSource('rain', {
+          type: 'image',
+          url: field.url,
+          coordinates: field.coordinates,
+        })
         map.addLayer({
-          id: 'rain-cells',
-          type: 'circle',
+          id: 'rain-field',
+          type: 'raster',
           source: 'rain',
           paint: {
-            'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 6, 12, 22],
-            'circle-color': [
-              'interpolate', ['linear'], ['get', 'value'], ...mcRef.current.ramp,
-            ],
-            'circle-opacity': 0.55,
-            'circle-stroke-width': 0.5,
-            'circle-stroke-color': mcRef.current.ground,
+            // Held below 1 so the ward bands still read THROUGH the wettest
+            // part of the field, which is exactly where an operator needs both.
+            'raster-opacity': 0.66,
+            // Bilinear, not nearest: without it MapLibre would hand the eye
+            // back the same grid of squares the circles were.
+            'raster-resampling': 'linear',
+            'raster-fade-duration': 0,
           },
         })
         restack(map)
-      })
+      }, 'rain field add')
     } else {
-      safe(map, () => map.getSource('rain').setData(pointData))
+      safe(
+        map,
+        () => map.getSource('rain').updateImage({ url: field.url, coordinates: field.coordinates }),
+        'rain field update',
+      )
     }
-  }, [ready, pointData])
+  }, [ready, field])
 
   const hoverBand = hover ? BAND_COLOR[hover.props.risk_band] || '#8ba0bd' : null
 
