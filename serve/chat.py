@@ -71,22 +71,38 @@ ENDPOINT = ("https://generativelanguage.googleapis.com/v1beta/"
 SYSTEM = """You are PRAVAAH's assistant, helping a Delhi ward officer during a \
 flood-warning shift.
 
-ABSOLUTE RULES:
-1. Use ONLY numbers present in the CONTEXT JSON. Never invent, estimate or \
-recall a figure from elsewhere. If the context does not contain something, say \
-"that isn't in the current data" and say what IS available.
+THE ONE HARD RULE — about NUMBERS AND PREDICTIONS ONLY:
+1. Every FIGURE you state about Delhi, this ward, the weather or the models \
+must come from the CONTEXT JSON. Never invent, estimate or recall a figure from \
+elsewhere. If a specific number is not in the context, say you do not have it.
 2. You do NOT forecast. Three machine-learning models produced these numbers; \
-you explain and summarise them.
-3. Be brief and operational. A duty officer at 4am wants what is at risk, how \
-confident we are, and what to do — not a lecture.
-4. Never claim certainty the numbers do not support. A probability below half \
+you explain and summarise them. Never predict rainfall or flooding beyond what \
+the context already states.
+
+EVERYTHING ELSE: BE GENUINELY USEFUL.
+3. You MAY reason, explain, give practical safety advice and answer ordinary \
+questions using general knowledge — what a "watch" band implies for someone's \
+plans, why underpasses flood first, whether to carry an umbrella, what a duty \
+officer should check next. You are not restricted to reciting the JSON.
+4. Do not stonewall. If someone asks about a specific place, road or business we \
+have no data for, say briefly that PRAVAAH does not track it, then answer the \
+question they actually meant using the ward-level numbers you DO have and \
+ordinary common sense. A person asking "should I go out tonight?" wants a \
+judgement, not an inventory.
+5. Keep general knowledge and PRAVAAH's measurements clearly distinct. \
+"PRAVAAH puts this ward at X" is a measurement; "underpasses are usually the \
+first places to flood" is general advice. Never let the second borrow the \
+authority of the first, and never attach a made-up number to it.
+6. Be brief and human. A duty officer at 4am, or a person deciding whether to \
+go out, wants a straight answer first and the caveats second — not a lecture.
+7. Never claim certainty the numbers do not support. A probability below half \
 means the event probably will NOT happen; say so plainly rather than alarming. \
-Quote the ward's own probability when you do — never a number from these \
-instructions.
-5. If asked about model accuracy or trustworthiness, quote the measured skill \
+Quote the ward's own probability, never a number from these instructions.
+8. If asked about model accuracy or trustworthiness, quote the measured skill \
 in the context, including its limits. Do not oversell.
-6. Answer in the language of the question. If asked in Hindi, reply in natural \
-Devanagari Hindi.
+9. Answer in the language of the question. An English question gets a fully \
+English answer; a Hindi question gets natural Devanagari Hindi. Do NOT reply in \
+romanised Hinglish to an English question.
 
 Plain text only. No markdown headers. Under 150 words unless asked for more."""
 
@@ -156,46 +172,57 @@ def build_context(ward: dict | None, kpi: dict | None, event: str,
     return ctx
 
 
-def _numbers(s: str) -> set[str]:
-    return {n.rstrip(".") for n in re.findall(r"\d[\d,]*\.?\d*", s or "")}
+def _numbers(s: str) -> list[str]:
+    return [n.rstrip(".") for n in re.findall(r"\d[\d,]*\.?\d*", s or "")]
 
 
-def _allowed(ctx: dict) -> set[str]:
-    """
-    Numbers the model may legitimately use, plus benign derivations.
-
-    ROUNDING IS NOT FABRICATION. The context stores full float precision
-    (0.12048192771084337) while any sane answer writes 0.1205 or 0.12. An
-    earlier version of this set omitted those forms, so the guard rejected a
-    CORRECT answer to "how accurate is this model?" — one of the questions
-    judges are most likely to ask — and fell back to a generic city summary that
-    did not address accuracy at all.
-
-    A false positive here is not harmless: it silently downgrades the feature
-    while looking like the model misbehaved. So every rounding of a context
-    value to 0-4 decimal places is admitted. That cannot launder an invented
-    figure, because a rounding of a number we hold IS that number at lower
-    precision — the set never gains a value the context did not already imply.
-    """
-    base = _numbers(json.dumps(ctx))
-    extra: set[str] = set()
-    for n in list(base):
+def _context_values(ctx: dict) -> list[float]:
+    """Every numeric literal in the context, as floats."""
+    out = []
+    for n in _numbers(json.dumps(ctx)):
         try:
-            v = float(n.replace(",", ""))
+            out.append(float(n.replace(",", "")))
         except ValueError:
-            continue
-        # a probability quoted as a percentage, and thousands separators
-        extra.add(str(int(round(v * 100))))
-        extra.add(str(int(round(v))))
-        extra.add(f"{v:,.0f}".replace(",", ""))
-        extra.add(f"{v:,.0f}")
-        # the same value written at any sensible precision, and as a percentage
-        for dp in range(0, 5):
-            extra.add(f"{v:.{dp}f}")
-            extra.add(f"{v:.{dp}f}".rstrip("0").rstrip("."))
-            extra.add(f"{v * 100:.{dp}f}")
-            extra.add(f"{v * 100:.{dp}f}".rstrip("0").rstrip("."))
-    return (base | extra | {str(i) for i in range(0, 101)}) - {""}
+            pass
+    return out
+
+
+def _is_grounded(token: str, values: list[float]) -> bool:
+    """
+    Is `token` a faithful rendering of some number in the context?
+
+    NUMERIC, NOT STRING-MATCHING. The previous version enumerated string forms
+    of each context value — thousands separators, percentages, roundings to
+    0-4 decimal places — and asked whether the reply's token was in that set.
+    That design fails silently and repeatedly, because the set of ways to write
+    a number correctly is unbounded. It rejected a CORRECT answer twice: first
+    for writing 0.1205 where the context held 0.12048192771084337, and then,
+    after the decimal places were extended to four, for writing 0.12052 at five.
+    Chasing that with more enumeration would only postpone the third failure.
+
+    So the question is now asked directly: a token written with `d` decimals is
+    grounded if some context value rounds to it at `d` decimals — which is the
+    definition of a correct rounding — or if the value does so when expressed as
+    a percentage. Bare integers 0-100 are always allowed (counts, percentages
+    and ordinals in ordinary prose).
+
+    This is STRICTLY MORE HONEST than the old set, not merely more permissive:
+    it accepts every faithful rendering at any precision, and it still rejects
+    any figure that is not a rendering of something we actually computed.
+    """
+    raw = token.replace(",", "")
+    try:
+        r = float(raw)
+    except ValueError:
+        return True                      # not a number we can judge
+    if r == int(r) and 0 <= r <= 100:
+        return True
+    dp = len(raw.split(".")[1]) if "." in raw else 0
+    tol = 0.5 * (10 ** -dp) + 1e-12      # half a unit in the last place
+    for v in values:
+        if abs(v - r) <= tol or abs(v * 100 - r) <= tol:
+            return True
+    return False
 
 
 def ask(question: str, ctx: dict) -> dict:
@@ -222,9 +249,9 @@ def ask(question: str, ctx: dict) -> dict:
         return {"ok": False, "reason": f"{type(exc).__name__}",
                 "answer": fallback(question, ctx)}
 
-    invented = sorted(n for n in _numbers(text)
-                      if n not in _allowed(ctx)
-                      and n.replace(",", "") not in _allowed(ctx))
+    values = _context_values(ctx)
+    invented = sorted({n for n in _numbers(text)
+                       if not _is_grounded(n, values)})
     if invented:
         # A prompt instruction is not a control. If it wrote a figure that is
         # not in the context, we do not show it with a warning — we drop it.
