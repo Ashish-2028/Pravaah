@@ -40,6 +40,21 @@ HONEST LIMITS — SAY THESE OUT LOUD
     train — only to inform predictions from now on. Every logged frame is
     irreplaceable, which is why the logger runs continuously.
 
+  * NOT YET VALIDATED ON RAIN, AND THEREFORE NOT YET A MODEL INPUT.
+    Across the 37 good frames captured so far the maximum decoded rate is
+    1.0 mm/hr — the lowest legend bin — because it simply has not rained over
+    Delhi since logging began. A rain product cannot be validated on a dry
+    day: the correlation against independent observations is meaningless when
+    both series are ~0.
+    The decoder is structurally sound (geometry cross-checked two ways, exact
+    palette matching, torn frames rejected), but "we can decode it" is a
+    different claim from "we know the values are right during a storm". Wiring
+    an unvalidated observation into a live forecast would be exactly the kind
+    of unearned confidence this project has avoided everywhere else.
+    WHAT UNBLOCKS IT: one rain event over Delhi while the logger runs. Then
+    compare decoded rate against Open-Meteo and the gauge stations, and if it
+    holds up, feed it in.
+
     python ingest/radar_decode.py --probe
     python ingest/radar_decode.py            # decode all captures -> parquet
 """
@@ -135,9 +150,50 @@ def read_legend(a: np.ndarray) -> list[tuple[tuple[int, int, int], float]]:
     return list(zip(sw, bins))
 
 
+MIN_LEGEND_BINS = 14
+MAX_COLOURS = 180
+
+
+def frame_ok(a: np.ndarray) -> tuple[bool, str]:
+    """
+    Reject TORN frames — partially-downloaded GIFs that are structurally valid
+    but visually sheared.
+
+    This is a real failure we hit, not a hypothetical. One capture arrived with
+    displaced row bands and duplicated legend fragments; it decoded "fine" and
+    produced 33,852 pixels above 20 mm/hr scattered across 353 km — the whole
+    disc reading as torrential rain on a dry morning. It single-handedly
+    destroyed the radar-vs-observation correlation.
+
+    PIL's .load() does NOT catch this: enough of the GIF arrived to decode, so
+    the bytes are valid and only the CONTENT is garbage. Two cheap structural
+    signals separate it cleanly on every frame we hold:
+
+        good frames   118-146 distinct colours, 15-16 legend bins
+        the torn one  222 colours, 8 legend bins
+
+    A sheared image cannot produce a coherent legend, which is why the bin
+    count is the more meaningful of the two.
+    """
+    ncol = len(np.unique(a.reshape(-1, 3), axis=0))
+    if ncol > MAX_COLOURS:
+        return False, f"{ncol} distinct colours (>{MAX_COLOURS}) — frame looks torn"
+    try:
+        nb = len(read_legend(a.astype(np.int16)))
+    except Exception as exc:  # noqa: BLE001
+        return False, f"legend unreadable ({type(exc).__name__})"
+    if nb < MIN_LEGEND_BINS:
+        return False, f"only {nb} legend bins (<{MIN_LEGEND_BINS}) — frame looks torn"
+    return True, ""
+
+
 def decode(path: Path, lut: list) -> pd.DataFrame | None:
     """One GIF -> a tidy frame of (lat, lon, mm_hr) inside the radar range."""
-    a = np.asarray(Image.open(path).convert("RGB")).astype(np.int16)[:PANEL, :PANEL]
+    full = np.asarray(Image.open(path).convert("RGB")).astype(np.int32)
+    ok, why = frame_ok(full)
+    if not ok:
+        raise ValueError(f"corrupt frame: {why}")
+    a = full.astype(np.int16)[:PANEL, :PANEL]
     # int32, NOT int16. A squared RGB difference reaches 255**2 = 65,025, which
     # OVERFLOWS int16 (max 32,767) and wraps to a small number — making every
     # colour look "close" and classifying the entire green no-echo background
@@ -155,9 +211,21 @@ def decode(path: Path, lut: list) -> pd.DataFrame | None:
     d = ((flat[:, None, :] - colours[None, :, :]) ** 2).sum(axis=2)
     nearest = d.argmin(axis=1)
     mind = d.min(axis=1)
-    # A pixel far from EVERY legend colour is ground/coastline/text, not echo.
-    # 60^2*3 tolerates anti-aliasing without inventing rain out of map furniture.
-    mm = np.where(mind <= 60 * 60 * 3, values[nearest], 0.0)
+    # TOLERANCE. The GIF is palettised, so genuine echo pixels are EXACT
+    # palette entries; the only reason to allow any slack is anti-aliasing.
+    #
+    # Measured on a real frame, the echo count is IDENTICAL (89 px) for every
+    # tolerance from exact match up to d2=2700, then jumps to 1,204 at
+    # d2=10800. That plateau is the answer: everything admitted between those
+    # two thresholds is basemap TERRAIN SHADING — olive hill colours like
+    # (191,191,64) sitting ~8,200 from the 74 mm/hr orange. The first version
+    # used 10800 and therefore painted the Aravalli hills as heavy rain in
+    # every single frame.
+    #
+    # 2700 = ~30 per channel: generous for anti-aliasing, far tighter than the
+    # nearest terrain colour.
+    MATCH_TOL = 2700
+    mm = np.where(mind <= MATCH_TOL, values[nearest], 0.0)
 
     ys, xs = np.where(inside)
     dx_km = (xs - CX) / PX_PER_KM
@@ -188,9 +256,49 @@ def to_lattice(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
                   n_px=("mm_hr", "size")))
 
 
+def clutter_report(files: list[str], lut: list) -> int:
+    """
+    Persistence diagnostic — is anything echoing in the SAME pixel every frame?
+
+    WHY THERE IS NO CLUTTER MASK HERE. Ground clutter is permanent echo in
+    fixed pixels, so it is trivially detectable as high echo-frequency. Run
+    across 38 captures at the correct match tolerance, ZERO pixels echo in even
+    50% of frames — at any range band, including the 0-10 km ring where ground
+    clutter would be worst. IMD evidently clutter-filters the SRI product
+    before publishing it.
+    
+    So a mask would be machinery for a problem we do not have. This diagnostic
+    exists instead: if IMD changes the product, or filtering degrades, run it
+    and the persistence shows up immediately.
+    """
+    a0 = np.asarray(Image.open(files[-1]).convert("RGB")).astype(np.int32)[:PANEL, :PANEL]
+    colours = np.array([c for c, _ in lut], dtype=np.int32)
+    yy, xx = np.mgrid[0:PANEL, 0:PANEL]
+    rad = np.hypot(xx - CX, yy - CY)
+    inside = rad <= MAX_RANGE_KM * PX_PER_KM
+    acc = np.zeros(int(inside.sum()), dtype=np.int32)
+    for f in files:
+        a = np.asarray(Image.open(f).convert("RGB")).astype(np.int32)[:PANEL, :PANEL]
+        d = ((a[inside][:, None, :] - colours[None, :, :]) ** 2).sum(axis=2).min(axis=1)
+        acc += (d <= 2700).astype(np.int32)
+    freq = acc / len(files)
+    r_km = rad[inside] / PX_PER_KM
+    print(f"persistence across {len(files)} frames:")
+    for th in (0.5, 0.7, 0.9):
+        n = int((freq >= th).sum())
+        print(f"  echo in >={th:.0%} of frames: {n} px"
+              + ("   <- CLUTTER SUSPECTED, investigate" if n else "   (clean)"))
+    for lo, hi in ((0, 10), (10, 25), (25, 50), (50, 100), (100, 149)):
+        m = (r_km >= lo) & (r_km < hi)
+        print(f"  range {lo:>3}-{hi:>3} km: mean echo freq {freq[m].mean():.4f}")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--probe", action="store_true")
+    ap.add_argument("--clutter", action="store_true",
+                    help="persistence diagnostic — is any pixel always on?")
     args = ap.parse_args()
     cfg = yaml.safe_load(CONFIG.read_text())
 
@@ -202,6 +310,9 @@ def main() -> int:
     a0 = np.asarray(Image.open(files[-1]).convert("RGB")).astype(np.int16)
     lut = read_legend(a0)
     print(f"legend: {len(lut)} bins, {lut[0][1]}..{lut[-1][1]} mm/hr")
+
+    if args.clutter:
+        return clutter_report(files, lut)
 
     if args.probe:
         df = decode(Path(files[-1]), lut)
@@ -220,7 +331,7 @@ def main() -> int:
         return 0
 
     OUT.mkdir(parents=True, exist_ok=True)
-    rows, done = [], 0
+    rows, done, rejected = [], 0, 0
     for f in files:
         m = STAMP.search(Path(f).name)
         if not m:
@@ -230,8 +341,12 @@ def main() -> int:
             continue
         try:
             g = to_lattice(decode(Path(f), lut), cfg)
+        except ValueError as exc:
+            print(f"  REJECT {Path(f).name[:34]}: {exc}")
+            rejected += 1
+            continue
         except Exception as exc:  # noqa: BLE001
-            print(f"  skip {Path(f).name}: {type(exc).__name__}")
+            print(f"  skip {Path(f).name[:34]}: {type(exc).__name__}")
             continue
         if g.empty:
             continue
@@ -240,7 +355,8 @@ def main() -> int:
         rows.append(g)
         done += 1
 
-    print(f"\ndecoded {done} new frames -> {OUT.relative_to(ROOT)}")
+    print(f"\ndecoded {done} new frames, rejected {rejected} corrupt "
+          f"-> {OUT.relative_to(ROOT)}")
     if rows:
         allg = pd.concat(rows, ignore_index=True)
         print(f"  {len(allg):,} lattice-frames, max {allg.radar_max.max():.1f} mm/hr")
