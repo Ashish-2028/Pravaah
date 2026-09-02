@@ -1,0 +1,17 @@
+{
+ "reportable": false,
+ "what": "Skill vs forecast lead \u2014 NOT COMPUTABLE from this source.",
+ "reason": "Open-Meteo's precipitation_previous_dayN does not behave as an N-day lead. Continuous skill fails to degrade with lead (correlation 0.579 / 0.566 / 0.594 at 24/48/72 h), and the longest lead scores best. Atmospheric predictability decays, so a genuine lead series cannot look like this \u2014 the alignment or the semantics of the field differ from the name.",
+ "what_we_will_not_do": "Publish a skill-vs-lead curve on top of an alignment we cannot verify. The 10 mm and 20 mm categorical rows DID decay in the expected direction and would have looked publishable on their own.",
+ "correlation_by_lead_h": {
+  "24": 0.5794,
+  "48": 0.5664,
+  "72": 0.5938
+ },
+ "cell_days": 34776,
+ "years": [
+  2024,
+  2025
+ ],
+ "consequence": "The Forecast view's lead selector keeps its honest label: RainFuse ships one 24 h head and longer leads are that field re-labelled. We do not have the data to say more."
+}
