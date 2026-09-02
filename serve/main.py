@@ -402,6 +402,45 @@ def chat_status() -> dict:
                      "is rejected if the model invents one.")}
 
 
+class SandboxRequest(BaseModel):
+    rain_sum: float = 64.5
+    rain_max: float = 16.0
+    rain_prev3d: float = 25.0
+    rain_prev7d: float = 45.0
+    lat: float | None = None
+    lon: float | None = None
+    radius_km: float = 12.0
+
+
+@app.post("/api/sandbox")
+def sandbox_run(req: SandboxRequest) -> dict:
+    """
+    What-if: run InundaNet live on rainfall the user invented.
+
+    The one route in this service that performs inference rather than reading a
+    precomputed artefact — see serve/sandbox.py for why that exception is
+    scoped and why it cannot affect any number /replay or /verify reports.
+
+    Every response carries is_forecast=false and an `evidence` block naming the
+    rainfall beyond which the model is mathematically flat, so no client can
+    dress a hypothetical up as a prediction or ship a slider that does nothing.
+    """
+    from serve import sandbox as sb
+    if not sb.available():
+        raise HTTPException(503, "sandbox artefacts not built")
+    return sb.run(req.rain_sum, req.rain_max, req.rain_prev3d, req.rain_prev7d,
+                  req.lat, req.lon, req.radius_km)
+
+
+@app.get("/api/sandbox/curve")
+def sandbox_curve(rain_prev3d: float = 25.0, rain_prev7d: float = 45.0) -> dict:
+    """Model response vs rainfall, so the UI can DRAW where the model flattens."""
+    from serve import sandbox as sb
+    if not sb.available():
+        raise HTTPException(503, "sandbox artefacts not built")
+    return sb.response_curve(rain_prev3d, rain_prev7d)
+
+
 @app.get("/api/verify/metrics")
 def get_metrics() -> dict:
     """The four-proofs payload: reliability, ablation, skill-vs-lead, lead-time."""
