@@ -391,6 +391,26 @@ def update(c, heads, cells, exp, wards_geo, inunda) -> dict:
             "updated_ist": (datetime.now(timezone.utc) +
                             timedelta(hours=5, minutes=30)).strftime("%d %b %H:%M IST")}
     (tmp / "meta.json").write_text(json.dumps(meta, indent=2))
+
+    # CARRY THE RADAR FRAMES ACROSS THE SWAP.
+    #
+    # Two scripts write into data/outputs/live/ and only one of them knows it:
+    # scripts/publish_radar.py owns live/frames/ (the IMD DWR imagery), while
+    # this script replaces the WHOLE live/ directory. So every refresh silently
+    # deleted the radar panel's source and the UI 404'd on the manifest — which
+    # is how it was found: the panel reported "no captures yet" while 133 raw
+    # GIFs sat in data/raw/live/radar.
+    #
+    # This is the same bug as the index.json race, in a different costume: an
+    # atomic swap is only atomic for the data you own. Anything a sibling writer
+    # put inside the swapped directory has to be carried forward explicitly.
+    #
+    # Copied, not moved: if anything below this line raises, the live directory
+    # on disk is still the previous good one WITH its frames intact.
+    if (LIVE / "frames").is_dir():
+        shutil.rmtree(tmp / "frames", ignore_errors=True)
+        shutil.copytree(LIVE / "frames", tmp / "frames")
+
     old = OUTPUTS / f"_live_old_{os.getpid()}"
     shutil.rmtree(old, ignore_errors=True)
     if LIVE.exists():
@@ -427,6 +447,18 @@ def main() -> int:
             m = update(c, heads, cells, exp, wards_geo, inunda)
             print(f"[{m['updated_ist']}] live updated: {len(m['timestamps'])} frames, "
                   f"{m['wards']} wards", flush=True)
+            # Republish the radar imagery the logger has captured since the last
+            # pass. The logger writes GIFs to data/raw/live/radar on its own
+            # cadence, but nothing turned them into frames — so the panel aged
+            # out during a long demo while fresh captures sat on disk unused.
+            # Failure here must never fail the live update: the rain and flood
+            # predictions are the product, the radar panel is corroboration.
+            try:
+                from scripts.publish_radar import main as _publish_radar
+                _publish_radar()
+            except Exception as exc:  # noqa: BLE001
+                print(f"  radar republish skipped ({type(exc).__name__}: {exc})",
+                      flush=True)
         except Exception as exc:  # noqa: BLE001
             # The previous snapshot is untouched. Say so loudly and carry on.
             print(f"[{datetime.now(timezone.utc):%H:%M}Z] live update FAILED "
