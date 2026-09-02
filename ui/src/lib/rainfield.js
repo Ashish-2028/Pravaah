@@ -150,8 +150,21 @@ export function buildRainField(points, ramp) {
   // Rule 2: where the alpha ramp starts and ends. The absolute floor keeps a
   // genuinely dry field dry; the relative term is what makes a low-amplitude
   // field still legible instead of a uniform faint smear.
-  const lo = Math.max(0.02, 0.2 * vmax)
-  const hi = Math.max(lo + 0.03, 0.62 * vmax)
+  //
+  // Tuned by measurement, not taste. Decoding the raster off a live grid:
+  //   0.20 / 0.62 of vmax -> 96% of pixels painted. A faint wash over the whole
+  //                          of Delhi, i.e. the thing this rewrite exists to
+  //                          stop, just without the visible dots.
+  //   0.34 / 0.74 of vmax -> 45% clear, 31% faint, 18% mid, 5% at full alpha.
+  //                          The quiet third of the city disappears, the wet
+  //                          corner is unmistakable, the choropleth reads
+  //                          through everywhere else. That is the shape wanted.
+  // The absolute floor is the second guard, for a field whose maximum is itself
+  // near zero — the Forecast view's q90-vs-204.5 mm case. Kept low (0.012) so
+  // such a field still shows WHERE its tail is rather than blanking entirely;
+  // a field under 0.005 everywhere already returned null above.
+  const lo = Math.max(0.012, 0.34 * vmax)
+  const hi = Math.max(lo + 0.02, 0.74 * vmax)
 
   const lut = rampLut(ramp)
   const n = points.length

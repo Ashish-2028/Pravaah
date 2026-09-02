@@ -123,6 +123,47 @@ export function thresholdTitle(provenance, key) {
   return `Exceedance probability above ${mm} mm (ERA5 scale). Field name "${key}" is a legacy contract name, not the threshold.`
 }
 
+// ---------------------------------------------------------- feature labels
+//
+// Raw InundaNet column names, in the plain words the pipeline already uses.
+//
+// COPIED VERBATIM from DRIVER_WORDS in scripts/precompute.py, deliberately
+// rather than imported: there is no build step that can reach across from
+// Python into the bundle, and inventing a second set of wordings here is how a
+// ward ends up described one way on /inundation and another way on /sandbox.
+// If a driver is renamed in precompute.py, rename it here in the same commit.
+//
+// Most endpoints translate the driver before it reaches the UI — /api/wards
+// sends ["dense built-up", 0.06] already worded. /api/sandbox does NOT: it
+// sends the raw column so the client can label it, which is what this table is
+// for.
+export const FEATURE_LABELS = {
+  st_impervious: 'sealed surface',
+  st_built_up: 'dense built-up',
+  st_surface_height: 'low-lying pocket',
+  st_dist_drain: 'far from drain',
+  st_sink_depth: 'local depression',
+  st_slope: 'flat ground',
+  st_hand: 'low HAND',
+  st_twi: 'water gathers here',
+  st_drain_density: 'sparse drainage',
+  st_plan_curv: 'concave ground',
+  rain_sum: 'rainfall today',
+  rain_max: 'peak rain intensity',
+  rain_prev3d: '3-day antecedent rain',
+  rain_prev7d: '7-day antecedent rain',
+  st_underpass_dist: 'near an underpass',
+  st_underpass_density: 'many underpasses nearby',
+  st_bridge_dist: 'near a bridge structure',
+}
+
+/** Plain words for a raw feature name. An unmapped column is de-underscored
+ *  rather than dropped — a missing label should never hide a real driver. */
+export function featureLabel(feature) {
+  const key = String(feature || '')
+  return FEATURE_LABELS[key] || key.replace(/^st_/, '').replace(/_/g, ' ') || '—'
+}
+
 /** Diverging control-room ramp used by every choropleth. */
 export function rampColor(v) {
   const stops = [

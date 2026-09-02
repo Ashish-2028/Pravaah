@@ -34,9 +34,10 @@ export default function Inundation() {
 
   return (
     <div className="relative grid h-full grid-cols-[280px_1fr_360px] gap-2 overflow-hidden p-2">
-      <div className="grid min-h-0 grid-rows-[auto_minmax(200px,1fr)] gap-2 overflow-y-auto overflow-x-hidden pr-0.5">
+      <div className="flex min-h-0 flex-col gap-2 overflow-y-auto overflow-x-hidden pr-0.5">
         <Panel
           title="Exposure at high + critical"
+          className="shrink-0"
           right={<Prov>counted, not modelled</Prov>}
         >
           <dl className="grid grid-cols-2 gap-x-3 gap-y-2 p-3 text-[11.5px]">
@@ -55,7 +56,7 @@ export default function Inundation() {
             ))}
           </dl>
         </Panel>
-        <Panel title="Wards by risk" bodyClass="min-h-0">
+        <Panel title="Wards by risk" className="min-h-[200px] shrink-0 flex-1" bodyClass="min-h-0">
           {wardsRes.data ? (
             <RankedList rows={ranked} selectedWard={selectedWard} onSelect={selectWard} limit={80} />
           ) : (

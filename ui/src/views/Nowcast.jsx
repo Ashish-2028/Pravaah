@@ -119,13 +119,19 @@ export default function Nowcast() {
           )}
         </Panel>
 
-        {/* The rail scrolls as a column and every card in it sizes to its own
-            content. Nothing here carries a fixed height any more — that is what
-            made text spill out of the summary card and collide with the chart
-            below it. The chart alone gets a floor (280 px), because a line
-            chart squeezed under 200 px is unreadable whatever else is true. */}
-        <div className="grid min-h-0 grid-rows-[auto_auto_minmax(280px,1fr)] gap-2 overflow-y-auto overflow-x-hidden pr-0.5">
-          <Panel title="Lead stepper">
+        {/* FLEX COLUMN, NOT A GRID, AND EVERY CARD IS shrink-0.
+            This is the actual fix for "panels are squished and text overflows".
+            The rail used to be a `grid-rows-[auto auto 1fr]`, and a CSS grid
+            with a definite height will COMPRESS its auto tracks when the
+            content does not fit — Panel's own `min-h-0` removes the automatic
+            minimum that would otherwise stop it. Measured at 1280 × 700: the
+            summary card was handed 126 px for 227 px of content, so its text
+            spilled straight over the card below.
+            A flex column with `shrink-0` on each card cannot do that. Cards
+            keep their content height, the rail scrolls when the sum does not
+            fit, and the chart takes whatever is left down to a 280 px floor. */}
+        <div className="flex min-h-0 flex-col gap-2 overflow-y-auto overflow-x-hidden pr-0.5">
+          <Panel title="Lead stepper" className="shrink-0">
             <div className="p-3">
               <div className="flex flex-wrap gap-1">
                 {LEADS.map((h) => (
@@ -151,7 +157,7 @@ export default function Nowcast() {
             </div>
           </Panel>
 
-          <Panel title="Field summary">
+          <Panel title="Field summary" className="shrink-0">
             {stats ? (
               <dl className="grid grid-cols-2 gap-x-3 gap-y-2 p-3 text-[11.5px]">
                 {[
@@ -187,7 +193,7 @@ export default function Nowcast() {
               dishonest version of this chart. */}
           <Panel
             title="Skill vs lead — the honest decay"
-            className="min-h-[280px]"
+            className="min-h-[280px] shrink-0 flex-1"
             right={
               <span
                 className="shrink-0 text-[9.5px] uppercase tracking-wider text-dim"

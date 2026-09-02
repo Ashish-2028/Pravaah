@@ -382,6 +382,6 @@
       "n": 24
     }
   },
-  "generated": "2026-09-02T00:58:29.644182+00:00",
+  "generated": "2026-09-02T01:28:48.247276+00:00",
   "disclaimer": "IMD public radar imagery, captured live by our logger every 10 minutes and displayed as-is. NOT decoded \u2014 no model consumes these pixels. Decoding raw DWR volumes is the radar-era roadmap item."
 }

@@ -7,6 +7,7 @@ import Replay from './views/Replay'
 import Verify from './views/Verify'
 import Nowcast from './views/Nowcast'
 import Forecast from './views/Forecast'
+import Sandbox from './views/Sandbox'
 import { api } from './lib/api'
 import { useStore } from './lib/store'
 import { ErrorBox, Spinner } from './components/ui'
@@ -70,6 +71,7 @@ export default function App() {
             <Route path="/verify" element={<Verify />} />
             <Route path="/nowcast" element={<Nowcast />} />
             <Route path="/forecast" element={<Forecast />} />
+            <Route path="/sandbox" element={<Sandbox />} />
             <Route path="*" element={<Navigate to="/command" replace />} />
           </Routes>
         </AppShell>

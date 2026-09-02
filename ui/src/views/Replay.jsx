@@ -208,15 +208,15 @@ export default function Replay() {
           )}
         </Panel>
 
-        <div className="grid min-h-0 grid-rows-[minmax(180px,1fr)_auto] gap-2 overflow-y-auto overflow-x-hidden pr-0.5">
-          <Panel title="Wards by risk" bodyClass="min-h-0">
+        <div className="flex min-h-0 flex-col gap-2 overflow-y-auto overflow-x-hidden pr-0.5">
+          <Panel title="Wards by risk" className="min-h-[180px] shrink-0 flex-1" bodyClass="min-h-0">
             {wardsRes.data ? (
               <RankedList rows={ranked} selectedWard={selectedWard} onSelect={selectWard} limit={60} />
             ) : (
               <Spinner label="Ranking" />
             )}
           </Panel>
-          <Panel title="What we said, at this clock">
+          <Panel title="What we said, at this clock" className="shrink-0">
             {ward ? (
               <div className="p-3 text-[12px]">
                 <div className="truncate font-semibold text-ink">{ward.name}</div>

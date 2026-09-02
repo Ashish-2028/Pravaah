@@ -5,12 +5,14 @@ import {
   Activity,
   BadgeCheck,
   CloudRain,
+  FlaskConical,
   Gauge,
   History,
   Moon,
   Sun,
   Waves,
 } from 'lucide-react'
+import ChatPanel from './ChatPanel'
 import { BADGE_COLOR, hhmm, toIST } from '../lib/format'
 import { useHealth } from '../lib/hooks'
 import { useLivePump } from '../lib/live'
@@ -26,12 +28,28 @@ const NAV = [
   { to: '/nowcast', label: 'Nowcast 0–6 h', icon: CloudRain },
   { to: '/forecast', label: 'Forecast 6–72 h', icon: Activity },
   { to: '/inundation', label: 'Inundation + Impact', icon: Waves },
+  { to: '/sandbox', label: 'Sandbox', icon: FlaskConical },
   { to: '/replay', label: 'Replay', icon: History },
   { to: '/verify', label: 'Verification', icon: BadgeCheck },
 ]
 
 /** The one route that is a replay screen. Everything else is LIVE NOW. */
 export const REPLAY_ROUTE = '/replay'
+
+/** Sandbox output is a hypothetical, not a live picture. The header's live/
+ *  archive labelling would be a claim about a clock this screen does not have. */
+export const SANDBOX_ROUTE = '/sandbox'
+
+/**
+ * Where the chat dock appears.
+ *
+ * The endpoint answers from PRECOMPUTED artefacts for an (event, hour, ward),
+ * so it is offered exactly on the screens that show those — and deliberately
+ * NOT on Sandbox, where the numbers on screen came from live inference on
+ * rainfall somebody invented and the assistant has never seen them. A chat
+ * button there would invite a question it would answer about the wrong data.
+ */
+const CHAT_ROUTES = ['/command', '/nowcast', '/inundation']
 
 // The API health payload calls the fourth feed "stations"; the deck calls the
 // same badge STATIC. We show the API's own keys so the badge can never lie.
@@ -190,8 +208,20 @@ export default function AppShell({ children }) {
   // the override on exactly the routes that expose it.
   const archiveHere = Boolean(archiveEvent) && ARCHIVE_SELECT_ROUTES.includes(location.pathname)
   const shownEvent = archiveHere ? archiveEvent : event
-  const eventName = events.find((e) => e.id === shownEvent)?.name
-  const modeLabel = mode === 'replay' ? 'archive replay' : archiveHere ? 'archive' : 'live now'
+  // The Sandbox is not showing an event at all — it is showing a storm the
+  // operator invented — so the header must not label it LIVE NOW over the name
+  // of a real one. Same rule that gave the archive override its own label.
+  const sandboxHere = location.pathname === SANDBOX_ROUTE
+  const eventName = sandboxHere
+    ? 'User-chosen rainfall on real terrain — no event, no clock'
+    : events.find((e) => e.id === shownEvent)?.name
+  const modeLabel = sandboxHere
+    ? 'hypothetical'
+    : mode === 'replay'
+      ? 'archive replay'
+      : archiveHere
+        ? 'archive'
+        : 'live now'
 
   // Route -> mode. The single writer of `mode` in the whole app.
   useEffect(() => {
@@ -266,7 +296,7 @@ export default function AppShell({ children }) {
               <span
                 className={clsx(
                   'ml-2 rounded px-1 text-[10px] font-semibold uppercase tracking-wider',
-                  archiveHere ? 'bg-amber/20 text-amber' : 'text-dim',
+                  archiveHere || sandboxHere ? 'bg-amber/20 text-amber' : 'text-dim',
                 )}
               >
                 {modeLabel}
@@ -292,6 +322,11 @@ export default function AppShell({ children }) {
         <main key={location.pathname} className="min-h-0 flex-1 overflow-hidden">
           {children}
         </main>
+        {/* Mounted per-route rather than always: unmounting is what clears the
+            conversation when the operator walks to a screen the assistant is
+            not grounded on, so an answer about Inundation cannot be left
+            hanging over the Sandbox. */}
+        {CHAT_ROUTES.includes(location.pathname) && <ChatPanel />}
       </div>
     </div>
   )

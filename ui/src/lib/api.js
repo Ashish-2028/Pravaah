@@ -19,6 +19,17 @@ export function qs(params) {
   return s ? `?${s}` : ''
 }
 
+/** FastAPI puts the useful sentence in `detail`; fall back to the status line. */
+async function detailOf(res) {
+  try {
+    const body = await res.json()
+    if (body && body.detail) return String(body.detail)
+  } catch {
+    /* non-JSON error body — keep the status line */
+  }
+  return `${res.status} ${res.statusText}`
+}
+
 async function request(url, { method = 'GET', cacheable = true } = {}) {
   const key = `${method} ${url}`
   if (cacheable && cache.has(key)) return cache.get(key)
@@ -31,16 +42,7 @@ async function request(url, { method = 'GET', cacheable = true } = {}) {
     } catch {
       throw new Error(`Cannot reach the PRAVAAH API (${url}). Is uvicorn running on :8000?`)
     }
-    if (!res.ok) {
-      let detail = `${res.status} ${res.statusText}`
-      try {
-        const body = await res.json()
-        if (body && body.detail) detail = body.detail
-      } catch {
-        /* non-JSON error body — keep the status line */
-      }
-      throw new Error(detail)
-    }
+    if (!res.ok) throw new Error(await detailOf(res))
     const data = await res.json()
     if (cacheable) cache.set(key, data)
     return data
@@ -52,6 +54,30 @@ async function request(url, { method = 'GET', cacheable = true } = {}) {
   } finally {
     inflight.delete(key)
   }
+}
+
+/**
+ * POST with a JSON body, NEVER cached and never de-duplicated.
+ *
+ * The cache above exists because a historical artefact is immutable per
+ * (event, t). Neither endpoint that uses this helper is an artefact: the
+ * sandbox answers a storm the operator invented half a second ago, and the
+ * chat endpoint is a conversation. Caching either one would serve a stale
+ * answer to a new question, which is the sandbox's single worst failure mode.
+ */
+async function postJson(url, body) {
+  let res
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(body),
+    })
+  } catch {
+    throw new Error(`Cannot reach the PRAVAAH API (${url}). Is uvicorn running on :8000?`)
+  }
+  if (!res.ok) throw new Error(await detailOf(res))
+  return res.json()
 }
 
 /** Same shape as request(), for endpoints that answer with text (the CAP XML). */
@@ -123,6 +149,38 @@ export const api = {
   /** Real IMD Delhi DWR captures, written by the live pipeline. Same origin,
    *  served off the static mount — no radar host is ever contacted. */
   radarManifest: () => request('/static/live/frames/manifest.json', { cacheable: false }),
+
+  // --------------------------------------------------------------- sandbox
+  // The ONE route in the service that runs inference rather than reading a
+  // precomputed artefact. Its answers are hypotheticals, never forecasts, and
+  // every response says so in `label` and `is_forecast`.
+  //
+  // `centre` is [lat, lon] or null. Null is a real value here, not a missing
+  // one — it means uniform city-wide rain — so it is sent explicitly rather
+  // than dropped, and qs()'s empty-value pruning is deliberately not involved.
+  sandbox: ({ rain_sum, rain_max, rain_prev3d, rain_prev7d, centre = null, radius_km = 12 }) =>
+    postJson('/api/sandbox', {
+      rain_sum,
+      rain_max,
+      rain_prev3d,
+      rain_prev7d,
+      lat: centre ? centre[0] : null,
+      lon: centre ? centre[1] : null,
+      radius_km,
+    }),
+
+  /** Max P(flood) and ward count over 60% as event rainfall is swept, holding
+   *  the two antecedent-wetness features fixed. */
+  sandboxCurve: (rain_prev3d, rain_prev7d) =>
+    request(`/api/sandbox/curve${qs({ rain_prev3d, rain_prev7d })}`),
+
+  // ------------------------------------------------------------------ chat
+  // Cannot fail by construction: with no key, or on any provider error, the
+  // endpoint answers 200 with ok=false and a deterministic answer built from
+  // the same context. The UI labels that case rather than hiding it.
+  chat: (question, event, t, wardId) =>
+    postJson('/api/chat', { question, event, t, ward_id: wardId || null }),
+  chatStatus: () => request('/api/chat/status'),
 }
 
 /** Warm the cache for a timestamp so the replay step does not stutter. */

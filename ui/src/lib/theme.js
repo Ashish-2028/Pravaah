@@ -83,6 +83,11 @@ export const MAP_THEME = {
     underpassPed: '#a9761d',
     blackspot: '#e5edf7',
     assetHalo: '#0b1220',
+    // The Sandbox storm footprint. Amber everywhere in this app means "this is
+    // a caveat, read it" — the archive banner, the underpasses, the evidence
+    // boundary — and a user-invented storm is exactly that, so it does not get
+    // a colour from the risk ramp.
+    storm: '#f59e0b',
     ramp: [
       0.0, '#17304d',
       0.25, '#0e7490',
@@ -113,6 +118,7 @@ export const MAP_THEME = {
     underpassPed: '#c99a4e',
     blackspot: '#0f1b2d',
     assetHalo: '#ffffff',
+    storm: '#b45309',
     ramp: [
       0.0, '#dbe7f3',
       0.25, '#5fb0c4',

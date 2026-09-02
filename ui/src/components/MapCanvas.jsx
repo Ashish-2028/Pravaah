@@ -385,6 +385,20 @@ const STACK = [
   'bm-roads-major-casing',
   'bm-roads-major',
   'wards-fill',
+  // The interpolated rain surface (lib/rainfield.js), sandwiched between the
+  // ward FILL and the ward OUTLINES, which is the only slot that works.
+  //
+  //   * It cannot go below the fill: the choropleth is 0.82 opaque, so a
+  //     translucent raster under it is invisible.
+  //   * It cannot go on top of everything either. On a cloudburst event 80% of
+  //     the raster is at full alpha, and up there it washes the ward geometry
+  //     out completely — measured, not guessed.
+  //
+  // Here, the wash tints the fill (which is what the rain views are for) while
+  // every ward boundary, the critical-ward pulse, the underpasses, the assets,
+  // the blackspots and the selection outline all still draw ON TOP of it. The
+  // map never loses its structure however wet the field gets.
+  'rain-field',
   'wards-line',
   'wards-critical',
   'bm-underpass-glow',
@@ -392,17 +406,46 @@ const STACK = [
   'bm-schools',
   'bm-hospitals',
   'bm-pumps',
-  // The interpolated rain surface (lib/rainfield.js). It sits ABOVE the ward
-  // fill because a translucent raster under an 0.82-opacity choropleth is
-  // invisible; it is allowed to sit there only because its own alpha is zero
-  // wherever the field is quiet, so the choropleth is never blanketed.
-  'rain-field',
   // Above everything except the selection outline: these are the landmarks the
   // presenter names aloud, so nothing is allowed to bury them.
   'bm-blackspots-ring',
   'bm-blackspots-pip',
   'wards-selected',
+  // Sandbox only. Above everything, because a user-invented storm footprint is
+  // an annotation ON the model output, not part of it.
+  'storm-fill',
+  'storm-line',
+  'storm-centre',
 ]
+
+/**
+ * A circle of `radiusKm` around (lat, lon) as a GeoJSON polygon.
+ *
+ * MapLibre has no circle-in-metres primitive for a fill — `circle-radius` is in
+ * SCREEN PIXELS, so a circle layer would keep its size on screen while the
+ * ground it covers grew as you zoomed out. That is precisely backwards for a
+ * storm footprint the operator is comparing against ward boundaries, so the
+ * footprint is real geometry.
+ *
+ * Longitude degrees shrink with cos(latitude); at Delhi's 28.6° that is a 12%
+ * correction, which is very visible on a 40 km circle.
+ */
+function circlePolygon(lat, lon, radiusKm, steps = 128) {
+  const dLat = radiusKm / 110.574
+  const dLon = radiusKm / (111.32 * Math.cos((lat * Math.PI) / 180) || 1)
+  const ring = []
+  for (let i = 0; i <= steps; i += 1) {
+    const th = (i / steps) * 2 * Math.PI
+    ring.push([lon + dLon * Math.cos(th), lat + dLat * Math.sin(th)])
+  }
+  return {
+    type: 'FeatureCollection',
+    features: [
+      { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [ring] } },
+      { type: 'Feature', properties: { centre: 1 }, geometry: { type: 'Point', coordinates: [lon, lat] } },
+    ],
+  }
+}
 
 /**
  * Basemap files arrive over several seconds and in whatever order the network
@@ -501,6 +544,12 @@ export default function MapCanvas({
   pointLabel = 'Grid value',
   basemap = true,
   className = '',
+  // Sandbox: a storm footprint drawn as real ground geometry, and a click
+  // handler that reports where the operator put it. Both are inert (and cost
+  // nothing) on every other screen, which passes neither.
+  storm = null, // {lat, lon, radiusKm} | null
+  onMapClick = null, // (lngLat) => void
+  legendLabel = null, // overrides the ramp caption
 }) {
   const theme = useTheme((st) => st.theme)
   const mc = MAP_THEME[theme]
@@ -921,9 +970,10 @@ export default function MapCanvas({
           type: 'raster',
           source: 'rain',
           paint: {
-            // Held below 1 so the ward bands still read THROUGH the wettest
-            // part of the field, which is exactly where an operator needs both.
-            'raster-opacity': 0.66,
+            // Held well below 1 so the ward bands still read THROUGH the
+            // wettest part of the field, which is exactly where an operator
+            // needs both at once.
+            'raster-opacity': 0.58,
             // Bilinear, not nearest: without it MapLibre would hand the eye
             // back the same grid of squares the circles were.
             'raster-resampling': 'linear',
@@ -940,6 +990,103 @@ export default function MapCanvas({
       )
     }
   }, [ready, field])
+
+  // ---------------------------------------------------- storm footprint
+  //
+  // Sandbox only. Rebuilt whenever the centre, the radius or the palette
+  // changes; torn down entirely when the operator goes back to uniform rain,
+  // so an empty circle can never be left behind claiming a storm is placed.
+  const stormData = useMemo(
+    () => (storm ? circlePolygon(storm.lat, storm.lon, storm.radiusKm) : null),
+    [storm],
+  )
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    if (!stormData) {
+      safe(map, () => {
+        ;['storm-centre', 'storm-line', 'storm-fill'].forEach((id) => {
+          if (map.getLayer(id)) map.removeLayer(id)
+        })
+        if (map.getSource('storm')) map.removeSource('storm')
+      }, 'storm teardown')
+      return
+    }
+    if (!map.getSource('storm')) {
+      safe(map, () => {
+        map.addSource('storm', { type: 'geojson', data: stormData })
+        map.addLayer({
+          id: 'storm-fill',
+          type: 'fill',
+          source: 'storm',
+          filter: ['==', ['geometry-type'], 'Polygon'],
+          // Low enough that the choropleth underneath is still readable in
+          // millimetres of colour — the footprint marks WHERE the rain fell,
+          // it does not get to hide what the model did with it.
+          paint: { 'fill-color': mcRef.current.storm, 'fill-opacity': 0.1 },
+        })
+        map.addLayer({
+          id: 'storm-line',
+          type: 'line',
+          source: 'storm',
+          filter: ['==', ['geometry-type'], 'Polygon'],
+          paint: {
+            'line-color': mcRef.current.storm,
+            'line-width': 1.8,
+            'line-opacity': 0.95,
+            'line-dasharray': [3, 2],
+          },
+        })
+        map.addLayer({
+          id: 'storm-centre',
+          type: 'circle',
+          source: 'storm',
+          filter: ['==', ['geometry-type'], 'Point'],
+          paint: {
+            'circle-color': mcRef.current.storm,
+            'circle-radius': 4,
+            'circle-stroke-color': mcRef.current.assetHalo,
+            'circle-stroke-width': 1.2,
+          },
+        })
+        restack(map)
+      }, 'storm add')
+    } else {
+      safe(map, () => map.getSource('storm').setData(stormData), 'storm update')
+    }
+  }, [ready, stormData])
+
+  // Theme swap for the footprint. It lives here rather than in the palette
+  // effect above because those layers only exist on one screen and the effect
+  // above must stay a pure walk over layers that always exist.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    safe(map, () => {
+      ;[['storm-fill', 'fill-color'], ['storm-line', 'line-color'], ['storm-centre', 'circle-color']].forEach(
+        ([id, prop]) => {
+          if (map.getLayer(id)) map.setPaintProperty(id, prop, mc.storm)
+        },
+      )
+      if (map.getLayer('storm-centre')) {
+        map.setPaintProperty('storm-centre', 'circle-stroke-color', mc.assetHalo)
+      }
+    }, 'storm repaint')
+  }, [ready, mc])
+
+  // Click anywhere -> report the ground position.
+  //
+  // Registered map-wide, NOT on 'wards-fill': the sandbox has to accept a storm
+  // centre dropped on the Yamuna or outside the ward layer entirely, and a
+  // layer-scoped handler would silently swallow those clicks.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready || !onMapClick) return undefined
+    const handler = (e) => onMapClick(e.lngLat)
+    map.on('click', handler)
+    return () => map.off('click', handler)
+  }, [ready, onMapClick])
 
   const hoverBand = hover ? BAND_COLOR[hover.props.risk_band] || '#8ba0bd' : null
 
@@ -1096,7 +1243,7 @@ export default function MapCanvas({
 
       <div className="pointer-events-none absolute bottom-3 left-3 z-10 rounded-md border border-grid bg-panel/90 px-2.5 py-2">
         <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted">
-          {points ? pointLabel : layer === 'exposure' ? 'People exposed' : 'Probability'}
+          {legendLabel || (points ? pointLabel : layer === 'exposure' ? 'People exposed' : 'Probability')}
         </div>
         <div
           className="mt-1.5 h-2 w-40 rounded"
@@ -1119,6 +1266,17 @@ export default function MapCanvas({
             </>
           )}
         </div>
+        {/* A GRID WAS ASKED FOR AND NOTHING WAS PAINTED. buildRainField returns
+            null when the whole field is below the floor — e.g. the P(>10 mm)
+            head at 0.3% everywhere — and drawing nothing is the right answer.
+            But an empty map next to a probability ramp reads as a broken layer,
+            so say which one it is. */}
+        {points && !field && (
+          <div className="mt-1.5 max-w-40 border-t border-grid pt-1 text-[9px] leading-snug text-dim">
+            No cell in this grid clears the display threshold — the field is flat near zero, so
+            nothing is drawn.
+          </div>
+        )}
       </div>
     </div>
   )

@@ -162,13 +162,15 @@ export default function Command() {
           )}
         </Panel>
 
-        {/* The rail scrolls rather than compressing. Radar (≈250 px) plus the
-            selected-ward card plus a ward list does not fit a laptop viewport,
-            and without this the third card simply overflowed the column and sat
-            on top of whatever the next panel was. */}
-        <div className="grid min-h-0 grid-rows-[minmax(180px,1fr)_auto_auto] gap-2 overflow-y-auto overflow-x-hidden pr-0.5">
+        {/* The rail scrolls rather than compressing — flex column, shrink-0 on
+            every card. Radar (≈250 px) plus the selected-ward card plus a ward
+            list does not fit a laptop viewport, and a grid track would hand each
+            card less height than its content and let it spill over its
+            neighbour. See the long note in Nowcast.jsx. */}
+        <div className="flex min-h-0 flex-col gap-2 overflow-y-auto overflow-x-hidden pr-0.5">
           <Panel
             title="Wards by risk"
+            className="min-h-[180px] shrink-0 flex-1"
             right={<span className="tabular text-[10px] text-dim">{ranked.length}</span>}
             bodyClass="min-h-0"
           >
@@ -184,11 +186,11 @@ export default function Command() {
             )}
           </Panel>
 
-          <Panel title="Live radar — IMD Delhi DWR">
+          <Panel title="Live radar — IMD Delhi DWR" className="shrink-0">
             <RadarPanel height={190} />
           </Panel>
 
-          <Panel title="Selected ward">
+          <Panel title="Selected ward" className="shrink-0">
             {ward ? (
               <div className="p-3">
                 <div className="flex items-start justify-between gap-2">

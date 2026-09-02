@@ -68,6 +68,10 @@ EXPOSURE = ROOT / "data" / "static" / "exposure.parquet"
 
 RAIN_COLS = ["rain_sum", "rain_max", "rain_prev3d", "rain_prev7d"]
 
+# Peak-hour share of a 6 h burst, used only when sweeping the response curve.
+# Must stay above 1/6, or the swept storm is physically impossible.
+PEAK_SHARE = 0.28
+
 # UNITS MATTER HERE, AND THEY ARE NOT IMD'S UNITS.
 #
 # `rain_sum` is a 6 HOUR ERA5 accumulation — the same quantity precompute feeds
@@ -209,16 +213,40 @@ def response_curve(rain_prev3d: float = 25.0, rain_prev7d: float = 45.0,
     pts = []
     for r in np.linspace(0, hi, n):
         df["rain_sum"] = r
-        df["rain_max"] = r * 0.28          # a typical peak-hour share of a burst
+        df["rain_max"] = r * PEAK_SHARE
         p = booster.predict(df[feats])
         s = pd.Series(p).groupby(df["ward_no"].to_numpy()).quantile(0.90)
         pts.append({"rain_mm": round(float(r), 1),
                     "max_p": round(float(s.max()), 4),
                     "wards_over_60pct": int((s >= 0.60).sum())})
-    return {"points": pts, "evidence_limit_mm": evidence_bounds()["rain_sum"],
-            "note": ("Above the evidence limit the curve is flat because the "
-                     "model has no training examples there, not because more "
-                     "rain is harmless.")}
+
+    # BE EXPLICIT THAT TWO FEATURES ARE MOVING.
+    #
+    # The sweep raises rain_max alongside rain_sum, because holding the peak
+    # hour fixed while the 6 h total climbs to 120 mm would plot a storm that
+    # cannot exist (rain_max >= rain_sum/6). The cost is that the curve is NOT
+    # purely rain_sum's response: it takes a second step when rain_max crosses
+    # its own limit, which a reader would otherwise misread as the model still
+    # responding to the total.
+    #
+    # So the API names both boundaries rather than leaving the UI to explain a
+    # step the payload does not account for.
+    b = evidence_bounds()
+    return {
+        "points": pts,
+        "evidence_limit_mm": b["rain_sum"],
+        "swept": {
+            "rain_sum": "x axis",
+            "rain_max": f"{PEAK_SHARE} x rain_sum, to keep the storm physical",
+        },
+        "second_step_mm": round(b["rain_max"] / PEAK_SHARE, 1),
+        "note": ("Above the evidence limit the curve is flat because the model "
+                 "has no training examples there, not because more rain is "
+                 "harmless. One further step appears near second_step_mm, where "
+                 "the swept rain_max crosses ITS own limit "
+                 f"({b['rain_max']} mm) — that step is the peak-hour feature, "
+                 "not the 6 h total."),
+    }
 
 
 def _weights(cells: pd.DataFrame, lat, lon, radius_km) -> np.ndarray:

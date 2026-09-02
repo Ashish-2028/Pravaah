@@ -173,12 +173,12 @@ export default function Forecast() {
         )}
       </Panel>
 
-      {/* Two cards, not three. The rail scrolls as a column, the stepper card
-          sizes to its own prose instead of being crushed into a fixed track,
-          and the chart keeps a 240 px floor so it can never be squeezed flat by
-          the note above it. */}
-      <div className="grid min-h-0 grid-rows-[auto_minmax(240px,1fr)] gap-2 overflow-y-auto overflow-x-hidden pr-0.5">
-        <Panel title="Lead stepper (6 h blocks)">
+      {/* Two cards, not three, in a flex column with shrink-0 on each — see the
+          long note on the same construction in Nowcast.jsx. A grid track would
+          compress the stepper card, whose prose is the tallest thing in this
+          rail, and spill it over the chart. */}
+      <div className="flex min-h-0 flex-col gap-2 overflow-y-auto overflow-x-hidden pr-0.5">
+        <Panel title="Lead stepper (6 h blocks)" className="shrink-0">
           <div className="p-3">
             <div className="flex flex-wrap gap-1">
               {LEADS.map((h) => {
@@ -276,7 +276,7 @@ export default function Forecast() {
 
         <Panel
           title={`Quantile spread — wettest 12 cells by ${quantile}`}
-          className="min-h-[240px]"
+          className="min-h-[240px] shrink-0 flex-1"
           bodyClass="min-h-0"
         >
           {fan.length ? (
