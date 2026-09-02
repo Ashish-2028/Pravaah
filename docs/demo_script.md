@@ -234,6 +234,38 @@ with the MCD and Delhi Jal Board.
 > It has caught us once already — it failed when `issue_time` equalled
 > `valid_time` everywhere, which meant the filter was doing nothing.
 
+**"Can I try my own storm?"** — the Sandbox screen
+
+> Yes. Choose the rainfall and InundaNet runs live on 148,776 real 100 m cells.
+> Only the rain is yours; the terrain, the ward geometry and the exposure counts
+> are real, and the response is flagged `is_forecast: false`.
+>
+> **Then show them the wall.** The trained booster's highest split on event
+> rainfall is **25.3 mm**, so above that it is mathematically constant — 40 mm,
+> 120 mm and 300 mm return byte-identical answers. The sandbox reads that
+> boundary out of the model artefact and draws it on the response curve.
+>
+> Say it first, before a judge finds it: *"Our flood labels do not contain
+> anything wetter than this, so past this line the model has no evidence and
+> stops changing. We would rather show you the edge of what we know than sell
+> you a slider that does nothing."*
+>
+> Within the range it does have evidence, it moves properly: **8 → 11 → 17 → 23**
+> high-risk wards across the four presets, and antecedent rain moves it further
+> because saturated ground is the real second variable.
+
+**"Why not bias-correct the rainfall so it handles cloudbursts?"**
+
+> We built the quantile map and then found it cannot help *this* model. Quantile
+> mapping is monotone, and a decision tree splits on order — so mapping
+> InundaNet's rain *inputs* yields the identical tree with rescaled thresholds.
+> It relabels the axis; it does not widen the response.
+>
+> It genuinely helps **RainCast**, where the compressed quantity is the
+> *target*: ERA5 gave 20.9 mm on 28 Jun 2024 where IMD's gauge grid said 150.7,
+> so the model has never been shown a cloudburst as a positive. That is why the
+> 15 mm/h head had 63 test positives and was dropped.
+
 **"Is the AI doing the forecasting?"**
 > No. Three LightGBM models do the forecasting. The narration layer is a
 > template that can only interpolate fields present in the model's own JSON —
