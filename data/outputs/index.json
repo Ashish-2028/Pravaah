@@ -4,18 +4,18 @@
       "id": "live",
       "name": "Live \u2014 Delhi NCR",
       "timestamps": [
+        "0600",
+        "0700",
+        "0800",
+        "0900",
+        "1000",
+        "1100",
+        "1200",
+        "1300",
         "1400",
         "1500",
         "1600",
-        "1700",
-        "1800",
-        "1900",
-        "2000",
-        "2100",
-        "2200",
-        "2300",
-        "0000",
-        "0100"
+        "1700"
       ],
       "wards": 289
     },
@@ -158,5 +158,5 @@
   ],
   "schema": 3,
   "split_note": "`split` names the model split each demo day falls in. The replay demonstrates the product; the skill numbers in /verify come from the held-out test year.",
-  "live_updated_utc": "2026-09-02T01:28:48.189952+00:00"
+  "live_updated_utc": "2026-09-03T17:33:14.095988+00:00"
 }

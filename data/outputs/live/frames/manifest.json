@@ -5,101 +5,6 @@
       "site": "Delhi DWR (IMD public imagery)",
       "frames": [
         {
-          "url": "/static/live/frames/delhi_caz_20260831T234912Z.png",
-          "captured_utc": "2026-08-31T23:49:12+00:00",
-          "stamp": "20260831T234912Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_caz_20260901T000915Z.png",
-          "captured_utc": "2026-09-01T00:09:15+00:00",
-          "stamp": "20260901T000915Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_caz_20260901T002923Z.png",
-          "captured_utc": "2026-09-01T00:29:23+00:00",
-          "stamp": "20260901T002923Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_caz_20260901T003925Z.png",
-          "captured_utc": "2026-09-01T00:39:25+00:00",
-          "stamp": "20260901T003925Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_caz_20260901T044436Z.png",
-          "captured_utc": "2026-09-01T04:44:36+00:00",
-          "stamp": "20260901T044436Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_caz_20260901T045500Z.png",
-          "captured_utc": "2026-09-01T04:55:00+00:00",
-          "stamp": "20260901T045500Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_caz_20260901T050503Z.png",
-          "captured_utc": "2026-09-01T05:05:03+00:00",
-          "stamp": "20260901T050503Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_caz_20260901T052508Z.png",
-          "captured_utc": "2026-09-01T05:25:08+00:00",
-          "stamp": "20260901T052508Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_caz_20260901T053510Z.png",
-          "captured_utc": "2026-09-01T05:35:10+00:00",
-          "stamp": "20260901T053510Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_caz_20260901T055534Z.png",
-          "captured_utc": "2026-09-01T05:55:34+00:00",
-          "stamp": "20260901T055534Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_caz_20260901T060538Z.png",
-          "captured_utc": "2026-09-01T06:05:38+00:00",
-          "stamp": "20260901T060538Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_caz_20260901T062543Z.png",
-          "captured_utc": "2026-09-01T06:25:43+00:00",
-          "stamp": "20260901T062543Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_caz_20260901T063544Z.png",
-          "captured_utc": "2026-09-01T06:35:44+00:00",
-          "stamp": "20260901T063544Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_caz_20260901T065549Z.png",
-          "captured_utc": "2026-09-01T06:55:49+00:00",
-          "stamp": "20260901T065549Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_caz_20260901T072559Z.png",
-          "captured_utc": "2026-09-01T07:25:59+00:00",
-          "stamp": "20260901T072559Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_caz_20260901T090918Z.png",
-          "captured_utc": "2026-09-01T09:09:18+00:00",
-          "stamp": "20260901T090918Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_caz_20260901T093925Z.png",
-          "captured_utc": "2026-09-01T09:39:25+00:00",
-          "stamp": "20260901T093925Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_caz_20260901T102942Z.png",
-          "captured_utc": "2026-09-01T10:29:42+00:00",
-          "stamp": "20260901T102942Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_caz_20260901T121058Z.png",
-          "captured_utc": "2026-09-01T12:10:58+00:00",
-          "stamp": "20260901T121058Z"
-        },
-        {
           "url": "/static/live/frames/delhi_caz_20260901T122108Z.png",
           "captured_utc": "2026-09-01T12:21:08+00:00",
           "stamp": "20260901T122108Z"
@@ -123,6 +28,101 @@
           "url": "/static/live/frames/delhi_caz_20260901T152206Z.png",
           "captured_utc": "2026-09-01T15:22:06+00:00",
           "stamp": "20260901T152206Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_caz_20260902T154828Z.png",
+          "captured_utc": "2026-09-02T15:48:28+00:00",
+          "stamp": "20260902T154828Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_caz_20260902T160641Z.png",
+          "captured_utc": "2026-09-02T16:06:41+00:00",
+          "stamp": "20260902T160641Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_caz_20260902T163641Z.png",
+          "captured_utc": "2026-09-02T16:36:41+00:00",
+          "stamp": "20260902T163641Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_caz_20260902T165244Z.png",
+          "captured_utc": "2026-09-02T16:52:44+00:00",
+          "stamp": "20260902T165244Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_caz_20260902T172209Z.png",
+          "captured_utc": "2026-09-02T17:22:09+00:00",
+          "stamp": "20260902T172209Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_caz_20260902T173742Z.png",
+          "captured_utc": "2026-09-02T17:37:42+00:00",
+          "stamp": "20260902T173742Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_caz_20260902T181254Z.png",
+          "captured_utc": "2026-09-02T18:12:54+00:00",
+          "stamp": "20260902T181254Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_caz_20260902T184003Z.png",
+          "captured_utc": "2026-09-02T18:40:03+00:00",
+          "stamp": "20260902T184003Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_caz_20260902T185630Z.png",
+          "captured_utc": "2026-09-02T18:56:30+00:00",
+          "stamp": "20260902T185630Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_caz_20260902T192352Z.png",
+          "captured_utc": "2026-09-02T19:23:52+00:00",
+          "stamp": "20260902T192352Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_caz_20260902T195738Z.png",
+          "captured_utc": "2026-09-02T19:57:38+00:00",
+          "stamp": "20260902T195738Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_caz_20260902T202448Z.png",
+          "captured_utc": "2026-09-02T20:24:48+00:00",
+          "stamp": "20260902T202448Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_caz_20260902T211233Z.png",
+          "captured_utc": "2026-09-02T21:12:33+00:00",
+          "stamp": "20260902T211233Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_caz_20260902T212556Z.png",
+          "captured_utc": "2026-09-02T21:25:56+00:00",
+          "stamp": "20260902T212556Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_caz_20260902T215836Z.png",
+          "captured_utc": "2026-09-02T21:58:36+00:00",
+          "stamp": "20260902T215836Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_caz_20260902T221535Z.png",
+          "captured_utc": "2026-09-02T22:15:35+00:00",
+          "stamp": "20260902T221535Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_caz_20260902T222708Z.png",
+          "captured_utc": "2026-09-02T22:27:08+00:00",
+          "stamp": "20260902T222708Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_caz_20260903T053307Z.png",
+          "captured_utc": "2026-09-03T05:33:07+00:00",
+          "stamp": "20260903T053307Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_caz_20260903T165837Z.png",
+          "captured_utc": "2026-09-03T16:58:37+00:00",
+          "stamp": "20260903T165837Z"
         }
       ],
       "n": 24
@@ -131,106 +131,6 @@
       "label": "PPI Reflectivity",
       "site": "Delhi DWR (IMD public imagery)",
       "frames": [
-        {
-          "url": "/static/live/frames/delhi_ppz_20260831T232857Z.png",
-          "captured_utc": "2026-08-31T23:28:57+00:00",
-          "stamp": "20260831T232857Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_ppz_20260831T234912Z.png",
-          "captured_utc": "2026-08-31T23:49:12+00:00",
-          "stamp": "20260831T234912Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_ppz_20260901T002924Z.png",
-          "captured_utc": "2026-09-01T00:29:24+00:00",
-          "stamp": "20260901T002924Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_ppz_20260901T003926Z.png",
-          "captured_utc": "2026-09-01T00:39:26+00:00",
-          "stamp": "20260901T003926Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_ppz_20260901T044437Z.png",
-          "captured_utc": "2026-09-01T04:44:37+00:00",
-          "stamp": "20260901T044437Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_ppz_20260901T045501Z.png",
-          "captured_utc": "2026-09-01T04:55:01+00:00",
-          "stamp": "20260901T045501Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_ppz_20260901T051506Z.png",
-          "captured_utc": "2026-09-01T05:15:06+00:00",
-          "stamp": "20260901T051506Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_ppz_20260901T053510Z.png",
-          "captured_utc": "2026-09-01T05:35:10+00:00",
-          "stamp": "20260901T053510Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_ppz_20260901T054531Z.png",
-          "captured_utc": "2026-09-01T05:45:31+00:00",
-          "stamp": "20260901T054531Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_ppz_20260901T060538Z.png",
-          "captured_utc": "2026-09-01T06:05:38+00:00",
-          "stamp": "20260901T060538Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_ppz_20260901T061541Z.png",
-          "captured_utc": "2026-09-01T06:15:41+00:00",
-          "stamp": "20260901T061541Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_ppz_20260901T064547Z.png",
-          "captured_utc": "2026-09-01T06:45:47+00:00",
-          "stamp": "20260901T064547Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_ppz_20260901T071556Z.png",
-          "captured_utc": "2026-09-01T07:15:56+00:00",
-          "stamp": "20260901T071556Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_ppz_20260901T072559Z.png",
-          "captured_utc": "2026-09-01T07:25:59+00:00",
-          "stamp": "20260901T072559Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_ppz_20260901T083903Z.png",
-          "captured_utc": "2026-09-01T08:39:03+00:00",
-          "stamp": "20260901T083903Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_ppz_20260901T094928Z.png",
-          "captured_utc": "2026-09-01T09:49:28+00:00",
-          "stamp": "20260901T094928Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_ppz_20260901T101940Z.png",
-          "captured_utc": "2026-09-01T10:19:40+00:00",
-          "stamp": "20260901T101940Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_ppz_20260901T102943Z.png",
-          "captured_utc": "2026-09-01T10:29:43+00:00",
-          "stamp": "20260901T102943Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_ppz_20260901T121059Z.png",
-          "captured_utc": "2026-09-01T12:10:59+00:00",
-          "stamp": "20260901T121059Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_ppz_20260901T123111Z.png",
-          "captured_utc": "2026-09-01T12:31:11+00:00",
-          "stamp": "20260901T123111Z"
-        },
         {
           "url": "/static/live/frames/delhi_ppz_20260901T130434Z.png",
           "captured_utc": "2026-09-01T13:04:34+00:00",
@@ -250,6 +150,106 @@
           "url": "/static/live/frames/delhi_ppz_20260901T152207Z.png",
           "captured_utc": "2026-09-01T15:22:07+00:00",
           "stamp": "20260901T152207Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_ppz_20260902T154828Z.png",
+          "captured_utc": "2026-09-02T15:48:28+00:00",
+          "stamp": "20260902T154828Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_ppz_20260902T160642Z.png",
+          "captured_utc": "2026-09-02T16:06:42+00:00",
+          "stamp": "20260902T160642Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_ppz_20260902T162108Z.png",
+          "captured_utc": "2026-09-02T16:21:08+00:00",
+          "stamp": "20260902T162108Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_ppz_20260902T163641Z.png",
+          "captured_utc": "2026-09-02T16:36:41+00:00",
+          "stamp": "20260902T163641Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_ppz_20260902T170816Z.png",
+          "captured_utc": "2026-09-02T17:08:16+00:00",
+          "stamp": "20260902T170816Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_ppz_20260902T172209Z.png",
+          "captured_utc": "2026-09-02T17:22:09+00:00",
+          "stamp": "20260902T172209Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_ppz_20260902T181254Z.png",
+          "captured_utc": "2026-09-02T18:12:54+00:00",
+          "stamp": "20260902T181254Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_ppz_20260902T182307Z.png",
+          "captured_utc": "2026-09-02T18:23:07+00:00",
+          "stamp": "20260902T182307Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_ppz_20260902T192352Z.png",
+          "captured_utc": "2026-09-02T19:23:52+00:00",
+          "stamp": "20260902T192352Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_ppz_20260902T195738Z.png",
+          "captured_utc": "2026-09-02T19:57:38+00:00",
+          "stamp": "20260902T195738Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_ppz_20260902T204052Z.png",
+          "captured_utc": "2026-09-02T20:40:52+00:00",
+          "stamp": "20260902T204052Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_ppz_20260902T211234Z.png",
+          "captured_utc": "2026-09-02T21:12:34+00:00",
+          "stamp": "20260902T211234Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_ppz_20260902T212558Z.png",
+          "captured_utc": "2026-09-02T21:25:58+00:00",
+          "stamp": "20260902T212558Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_ppz_20260902T215837Z.png",
+          "captured_utc": "2026-09-02T21:58:37+00:00",
+          "stamp": "20260902T215837Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_ppz_20260902T221536Z.png",
+          "captured_utc": "2026-09-02T22:15:36+00:00",
+          "stamp": "20260902T221536Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_ppz_20260902T224506Z.png",
+          "captured_utc": "2026-09-02T22:45:06+00:00",
+          "stamp": "20260902T224506Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_ppz_20260903T044757Z.png",
+          "captured_utc": "2026-09-03T04:47:57+00:00",
+          "stamp": "20260903T044757Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_ppz_20260903T093030Z.png",
+          "captured_utc": "2026-09-03T09:30:30+00:00",
+          "stamp": "20260903T093030Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_ppz_20260903T095804Z.png",
+          "captured_utc": "2026-09-03T09:58:04+00:00",
+          "stamp": "20260903T095804Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_ppz_20260903T171843Z.png",
+          "captured_utc": "2026-09-03T17:18:43+00:00",
+          "stamp": "20260903T171843Z"
         }
       ],
       "n": 24
@@ -258,71 +258,6 @@
       "label": "Surface Rainfall Intensity",
       "site": "Delhi DWR (IMD public imagery)",
       "frames": [
-        {
-          "url": "/static/live/frames/delhi_sri_20260831T221843Z.png",
-          "captured_utc": "2026-08-31T22:18:43+00:00",
-          "stamp": "20260831T221843Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_sri_20260831T223847Z.png",
-          "captured_utc": "2026-08-31T22:38:47+00:00",
-          "stamp": "20260831T223847Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_sri_20260831T224849Z.png",
-          "captured_utc": "2026-08-31T22:48:49+00:00",
-          "stamp": "20260831T224849Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_sri_20260831T225851Z.png",
-          "captured_utc": "2026-08-31T22:58:51+00:00",
-          "stamp": "20260831T225851Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_sri_20260831T230854Z.png",
-          "captured_utc": "2026-08-31T23:08:54+00:00",
-          "stamp": "20260831T230854Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_sri_20260831T232856Z.png",
-          "captured_utc": "2026-08-31T23:28:56+00:00",
-          "stamp": "20260831T232856Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_sri_20260831T235913Z.png",
-          "captured_utc": "2026-08-31T23:59:13+00:00",
-          "stamp": "20260831T235913Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_sri_20260901T044436Z.png",
-          "captured_utc": "2026-09-01T04:44:36+00:00",
-          "stamp": "20260901T044436Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_sri_20260901T050502Z.png",
-          "captured_utc": "2026-09-01T05:05:02+00:00",
-          "stamp": "20260901T050502Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_sri_20260901T051506Z.png",
-          "captured_utc": "2026-09-01T05:15:06+00:00",
-          "stamp": "20260901T051506Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_sri_20260901T053509Z.png",
-          "captured_utc": "2026-09-01T05:35:09+00:00",
-          "stamp": "20260901T053509Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_sri_20260901T054530Z.png",
-          "captured_utc": "2026-09-01T05:45:30+00:00",
-          "stamp": "20260901T054530Z"
-        },
-        {
-          "url": "/static/live/frames/delhi_sri_20260901T060537Z.png",
-          "captured_utc": "2026-09-01T06:05:37+00:00",
-          "stamp": "20260901T060537Z"
-        },
         {
           "url": "/static/live/frames/delhi_sri_20260901T064547Z.png",
           "captured_utc": "2026-09-01T06:45:47+00:00",
@@ -377,11 +312,76 @@
           "url": "/static/live/frames/delhi_sri_20260901T152206Z.png",
           "captured_utc": "2026-09-01T15:22:06+00:00",
           "stamp": "20260901T152206Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_sri_20260902T154827Z.png",
+          "captured_utc": "2026-09-02T15:48:27+00:00",
+          "stamp": "20260902T154827Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_sri_20260902T165244Z.png",
+          "captured_utc": "2026-09-02T16:52:44+00:00",
+          "stamp": "20260902T165244Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_sri_20260902T170815Z.png",
+          "captured_utc": "2026-09-02T17:08:15+00:00",
+          "stamp": "20260902T170815Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_sri_20260902T172209Z.png",
+          "captured_utc": "2026-09-02T17:22:09+00:00",
+          "stamp": "20260902T172209Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_sri_20260902T181254Z.png",
+          "captured_utc": "2026-09-02T18:12:54+00:00",
+          "stamp": "20260902T181254Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_sri_20260902T184001Z.png",
+          "captured_utc": "2026-09-02T18:40:01+00:00",
+          "stamp": "20260902T184001Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_sri_20260902T185630Z.png",
+          "captured_utc": "2026-09-02T18:56:30+00:00",
+          "stamp": "20260902T185630Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_sri_20260902T195738Z.png",
+          "captured_utc": "2026-09-02T19:57:38+00:00",
+          "stamp": "20260902T195738Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_sri_20260902T211233Z.png",
+          "captured_utc": "2026-09-02T21:12:33+00:00",
+          "stamp": "20260902T211233Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_sri_20260902T212555Z.png",
+          "captured_utc": "2026-09-02T21:25:55+00:00",
+          "stamp": "20260902T212555Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_sri_20260903T053307Z.png",
+          "captured_utc": "2026-09-03T05:33:07+00:00",
+          "stamp": "20260903T053307Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_sri_20260903T171842Z.png",
+          "captured_utc": "2026-09-03T17:18:42+00:00",
+          "stamp": "20260903T171842Z"
+        },
+        {
+          "url": "/static/live/frames/delhi_sri_20260903T172845Z.png",
+          "captured_utc": "2026-09-03T17:28:45+00:00",
+          "stamp": "20260903T172845Z"
         }
       ],
       "n": 24
     }
   },
-  "generated": "2026-09-02T01:28:48.247276+00:00",
+  "generated": "2026-09-03T17:33:14.632494+00:00",
   "disclaimer": "IMD public radar imagery, captured live by our logger every 10 minutes and displayed as-is. NOT decoded \u2014 no model consumes these pixels. Decoding raw DWR volumes is the radar-era roadmap item."
 }

@@ -1,10 +1,17 @@
-# ---- secrets (NEVER commit) -------------------------------------------
+# =======================================================================
+# PRAVAAH — .gitignore
+# =======================================================================
+
+# ---- Secrets (NEVER commit) -------------------------------------------
 .env
+.env.*
+!.env.example
 *.key
+*.pem
 *-service-account*.json
 .earthengine/
 
-# ---- large data (regenerable; NEVER commit) ---------------------------
+# ---- Large Geodata & Raw Inputs (Regenerable / Offline Storage) -------
 data/raw/
 data/static/
 data/labels/
@@ -14,32 +21,62 @@ data/labels/
 *.tiff
 *.grib
 *.grib2
+*.grd
 cube/*.zarr/
 
-# ---- python -----------------------------------------------------------
+# ---- Scratch & Temp Files ---------------------------------------------
+data/outputs/_live_tmp*
+data/outputs/*_tmp*
+
+# ---- Heavy Binary Model Weights (Keep lightweight LightGBM .txt only) -
+*.pt
+*.pth
+*.bin
+*.onnx
+*.ckpt
+*.h5
+
+# ---- Python & Virtual Environments ------------------------------------
 __pycache__/
 *.py[cod]
+*$py.class
 .venv/
 venv/
+env/
 .ipynb_checkpoints/
 .pytest_cache/
 .ruff_cache/
 *.egg-info/
+dist/
+build/
 
-# ---- node / frontend --------------------------------------------------
+# ---- Node / Frontend --------------------------------------------------
 node_modules/
 ui/dist/
 ui/.vite/
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# ---- os ---------------------------------------------------------------
+# ---- OS / Editor Files ------------------------------------------------
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
 
 # =======================================================================
-# DELIBERATELY TRACKED (the demo runs on these — see PRAVAAH.md §9.1):
-#   data/outputs/     models/*.pkl     reports/     .env.example
+# DELIBERATELY TRACKED (The demo runs offline on these — see PRAVAAH.md):
+#   data/outputs/     models/*.txt     reports/     .env.example
 # =======================================================================
 !data/outputs/
-!models/*.pkl
+!models/*.txt
 !reports/
+!reports/figures/
 !.env.example
